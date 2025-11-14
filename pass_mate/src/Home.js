@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./home_style.css";
 import { Link } from "react-router-dom";
 
 export default function Home({ user }) {
-  // Mock events and query for now, you can fetch them from API or state
   const [query, setQuery] = useState("");
   const [events, setEvents] = useState([
-    // Example data
     { id: 1, event_name: "Concert A" },
     { id: 2, event_name: "Exhibition B" },
     { id: 3, event_name: "Comedy Show C" },
+    { id: 4, event_name: "Totoys band" },
+    { id: 5, event_name: "Harley's Band" },
   ]);
 
-  // Filter events if query exists
   const filteredEvents = query
     ? events.filter((e) =>
         e.event_name.toLowerCase().includes(query.toLowerCase())
@@ -21,12 +20,31 @@ export default function Home({ user }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // You can also fetch events from backend here
     console.log("Searching for:", query);
   };
 
   return (
-    <div>
+    <div className="home-root">
+      {/* Top left My Tickets */}
+      <div className="ticket-container">
+        <Link to="/my-tickets" className="ticket-btn-top">
+          🎟️ My Tickets
+        </Link>
+      </div>
+
+      {/* Top right Logout (only shown when authenticated) */}
+      <div className="top-right-buttons">
+        {user?.isAuthenticated ? (
+          <Link to="/logout" className="logout-btn">
+            Logout
+          </Link>
+        ) : (
+          <Link to="/login" className="logout-btn">
+            Logout
+          </Link>
+        )}
+      </div>
+
       {/* Hero Section */}
       <div className="hero fade-in">
         <h1>
@@ -42,7 +60,7 @@ export default function Home({ user }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <button type="submit">🔍</button>
+            <button type="submit" aria-label="Search">🔍</button>
           </form>
         </div>
 
@@ -71,42 +89,11 @@ export default function Home({ user }) {
         ) : query ? (
           <div className="no-results">
             <p>No event named "<strong>{query}</strong>" found.</p>
-            <p>Do you wish to go back?</p>
-            <Link to="/" className="back-btn">
-              ⬅ Go Back
-            </Link>
+            <Link to="/" className="back-btn">⬅ Go Back</Link>
           </div>
         ) : (
           <p>No events available yet.</p>
         )}
-      </div>
-
-      {/* Top Right Buttons */}
-      <div className="top-right-buttons fade-in">
-        {user?.isAuthenticated ? (
-          <>
-            <Link to="/logout" className="logout-btn">
-              Logout
-            </Link>
-            <Link to="/profile" className="logout-btn">
-              Profile
-            </Link>
-          </>
-        ) : (
-          <Link to="/login" className="profile-btn">
-            Log in
-          </Link>
-        )}
-      </div>
-
-      {/* Top Bookmark Buttons */}
-      <div className="bookmark-container fade-in">
-        <Link to="/bookmarks" className="bookmark-btn-top">
-          ⭐ Bookmarks
-        </Link>
-        <Link to="/my-tickets" className="bookmark-btn-top">
-          🎟️ My Tickets
-        </Link>
       </div>
     </div>
   );
