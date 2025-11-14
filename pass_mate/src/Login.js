@@ -33,7 +33,7 @@ export default function Login() {
               placeholder="Type your email or username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              
             />
           </div>
 
@@ -44,7 +44,7 @@ export default function Login() {
               placeholder="Type your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+             
             />
           </div>
 
@@ -52,7 +52,9 @@ export default function Login() {
             <a href="#" className="forgot-link">Forgot Password?</a>
           </div>
 
-          <button type="submit" className="btn-login">Log In</button>
+          <a href="/home" className="btn-login">
+            Log In
+        </a>
         </form>
 
         {/* Register / Signup Link */}

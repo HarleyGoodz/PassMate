@@ -154,18 +154,20 @@ body, html {
 
 /* --- Login Button --- */
 .btn-login {
-    width: 100%;
-    padding: 14px; /* Padding from design */
-    background: #1e3a5f; /* Dark blue from design */
-    color: white;
-    border: none;
-    border-radius: 12px; /* Rounded corners from design */
-    margin-top: 20px;
-    font-size: 16px; /* Font size from design */
+    display: inline-block;   /* make it behave like a button */
+    text-align: center;      /* center the text */
+    width: 100%;             /* full width of parent */
+    padding: 14px;           /* vertical padding */
+    background: #1e3a5f;     /* button color */
+    color: white;            /* text color */
+    border: none;            /* remove border */
+    border-radius: 12px;     /* rounded corners */
+    font-size: 16px;
     font-weight: 600;
-    cursor: pointer;
+    cursor: pointer;         /* pointer on hover */
+    text-decoration: none;   /* remove underline from <a> */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     transition: background-color 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .btn-login:hover {
