@@ -27,7 +27,7 @@ export default function Home({ user }) {
     <div className="home-root">
       {/* Top left My Tickets */}
       <div className="ticket-container">
-        <Link to="/my-tickets" className="ticket-btn-top">
+        <Link to="/my-tickets" className="ticket-btn-top fade-button fade-hover">
           🎟️ My Tickets
         </Link>
       </div>
@@ -39,7 +39,7 @@ export default function Home({ user }) {
             Logout
           </Link>
         ) : (
-          <Link to="/login" className="logout-btn">
+          <Link to="/login" className="logout-btn fade-button fade-hover">
             Logout
           </Link>
         )}

@@ -48,10 +48,6 @@ export default function Login() {
             />
           </div>
 
-          <div className="forgot-password-link">
-            <a href="#" className="forgot-link">Forgot Password?</a>
-          </div>
-
           <a href="/home" className="btn-login">
             Log In
         </a>
