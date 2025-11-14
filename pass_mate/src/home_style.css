@@ -11,63 +11,59 @@ body {
     color: #333;
 }
 
-/* Remove any leftover circular image styling */
-.profile-btn img {
-    display: none;
+/* =============================== */
+/* TOP LEFT: My Tickets            */
+/* =============================== */
+.ticket-container {
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  z-index: 50;
 }
 
-/* =============================== */
-/*  LOGOUT + BOOKMARK TOP BUTTONS  */
-/* =============================== */
+.ticket-btn-top {
+  background-color: #fff;
+  color: #103c6e;
+  border: 2px solid #103c6e;
+  border-radius: 25px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.2s;
+}
+.ticket-btn-top:hover { background-color:#103c6e; color:#fff; box-shadow:0 3px 8px rgba(0,0,0,0.15); }
 
-.logout-container {
-    position: absolute;
-    top: 20px;
-    right: 30px;
+/* =============================== */
+/* TOP RIGHT: Logout / Login       */
+/* =============================== */
+.top-right-buttons {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  z-index: 50;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .logout-btn {
-    background-color: #fff;
-    color: #103c6e;
-    border: 2px solid #103c6e;
-    border-radius: 25px;
-    padding: 8px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.3s;
+  background-color: #fff;
+  color: #103c6e;
+  border: 2px solid #103c6e;
+  border-radius: 25px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.2s;
 }
-
-.logout-btn:hover {
-    background-color: #103c6e;
-    color: #fff;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-}
-
-.bookmark-container {
-    position: absolute;
-    top: 20px;
-    left: 30px;
-}
-
-.bookmark-btn-top {
-    background-color: #fff;
-    color: #103c6e;
-    border: 2px solid #103c6e;
-    border-radius: 25px;
-    padding: 8px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: 0.3s;
-}
-
-.bookmark-btn-top:hover {
-    background-color: #103c6e;
-    color: #fff;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-}
+.logout-btn:hover { background-color:#103c6e; color:#fff; box-shadow:0 3px 8px rgba(0,0,0,0.15); }
 
 /* =============================== */
 /* Hero Banner */
@@ -347,7 +343,7 @@ body {
 .ticket-container {
     position: absolute;
     top: 20px;
-    left: 180px;
+    left: 50px; /* Or 0px if you want it touching the edge */
 }
 
 .ticket-btn-top {
@@ -368,3 +364,4 @@ body {
     color: #fff;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
+
