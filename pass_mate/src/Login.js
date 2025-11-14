@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./login_styles.css";
-import qrLogo from "./assets/logo.png"; // replace with your QR logo file
+import qrLogo from "./assets/logo.png"; 
+import { Link } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,18 +13,21 @@ export default function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <img src={qrLogo} alt="QR Logo" className="login-logo" />
+    <div className="page-container">
+      <div className="form-box">
+        {/* Logo & Branding */}
+        <div className="logo-section">
+          <img src={qrLogo} alt="QR Logo" className="qr-logo" />
+          <h2 className="brand-name">
+            Event <span className="brand-cit">CIT</span>
+          </h2>
+          <p className="tagline">Skip the line, scan your way in.</p>
+        </div>
 
-        <h2 className="login-title">
-          Event <span>CIT</span>
-        </h2>
-        <p className="login-sub">Skip the line, scan your way in.</p>
-
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
-            <span className="icon">📧</span>
+            <span className="input-icon">📧</span>
             <input
               type="text"
               placeholder="Type your email or username"
@@ -34,7 +38,7 @@ export default function Login() {
           </div>
 
           <div className="input-group">
-            <span className="icon">🔒</span>
+            <span className="input-icon">🔒</span>
             <input
               type="password"
               placeholder="Type your password"
@@ -44,14 +48,19 @@ export default function Login() {
             />
           </div>
 
-          <a href="#" className="forgot-link">Forgot Password?</a>
+          <div className="forgot-password-link">
+            <a href="#" className="forgot-link">Forgot Password?</a>
+          </div>
 
-          <button type="submit" className="login-btn">Log In</button>
+          <button type="submit" className="btn-login">Log In</button>
         </form>
 
-        <p className="signup-text">
-          Don’t have an account? <a href="#" className="signup-link">Sign Up here</a>
-        </p>
+        {/* Register / Signup Link */}
+        <div className="register-link">
+          <p>
+            Don’t have an account? <Link to="/signup" className="register-here-link">Sign Up here</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
