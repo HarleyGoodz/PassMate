@@ -46,7 +46,25 @@ export default function EventDetails({ event, soldOut, userHasTicket }) {
           ) : userHasTicket ? (
             <button className="buy-btn disabled" disabled>✅ Ticket Owned</button>
           ) : (
-            <Link to={`/event/${event.id}/buy`} className="buy-btn">🎟️ Buy Ticket Now!</Link>
+          <Link
+            to={`/event/${event.id}/buy`}
+            state={{
+              price: event.ticket_price,
+              balance: 7963.0, // mock value
+              transaction_success: true,
+              user: { email: "johnharleycruz571@gmail.com" },
+              qrImage: "/images/qr_success.png",
+              messages: [
+                {
+                  text: "✅ Ticket purchased successfully! Check your email for the QR code.",
+                  type: "success",
+                },
+              ],
+            }}
+            className="buy-btn"
+          >
+            🎟️ Buy Ticket Now!
+          </Link>
           )}
         </div>
       </div>
