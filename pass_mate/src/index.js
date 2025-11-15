@@ -6,6 +6,7 @@ import SignUp from './SignUp';
 import App from './App';
 import Home from './Home';
 import EventDetails from './EventDetails'; // ✅ import your new component
+import BuyTicket from './buyTicket';
 import reportWebVitals from './reportWebVitals';
 import MyTickets from './MyTickets';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ root.render(
         <Route path="/signup" element={<SignUp />} />
         <Route path="/home" element={<Home user={{ isAuthenticated: false }} />} />
         <Route path="/app" element={<App />} />
+        <Route path="/event/:id/buy" element={<BuyTicket />} />
 
         {/* Event details route */}
         <Route
