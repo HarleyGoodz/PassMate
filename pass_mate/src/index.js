@@ -7,6 +7,7 @@ import App from './App';
 import Home from './Home';
 import EventDetails from './EventDetails'; // ✅ import your new component
 import reportWebVitals from './reportWebVitals';
+import MyTickets from './MyTickets';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -45,6 +46,40 @@ root.render(
             />
           }
         />
+              <Route
+  path="/my-tickets"
+  element={
+    <MyTickets
+      ticketsData={[
+        // Example tickets for testing
+        {
+          id: 1,
+          event: {
+            event_name: "Sample Event 1",
+            event_venue: "Cebu City",
+            event_date: "2025-11-20",
+            event_time_in: "10:00 AM",
+            event_time_out: "2:00 PM",
+            ticket_price: 500,
+          },
+        },
+        {
+          id: 2,
+          event: {
+            event_name: "Sample Event 2",
+            event_venue: "Mandaue City",
+            event_date: "2025-11-25",
+            event_time_in: "1:00 PM",
+            event_time_out: "5:00 PM",
+            ticket_price: 750,
+          },
+        },
+      ]}
+    />
+  }
+/>
+
+        
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
