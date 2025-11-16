@@ -1,7 +1,16 @@
-/* ============================= */
-/* General Styles (copied from Django) */
-/* ============================= */
-* {
+/* ===================================================== */
+/* SCOPED STYLING — BuyTicket page only                  */
+/* ===================================================== */
+
+.buy-ticket-page {
+    background-color: #f9f9f9;
+    color: #333;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* Reset ONLY inside BuyTicket */
+.buy-ticket-page * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -9,149 +18,84 @@
     transition: 0.3s all ease-in-out;
 }
 
-body {
-    background-color: #f9f9f9;
-    color: #333;
+/* ===================================================== */
+/* Floating Messages                                      */
+/* ===================================================== */
+
+.buy-ticket-page .messages {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1200;
+    max-width: 900px;
+    padding: 0 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
 }
 
-/* ============================= */
-/* Fixed, centered banner (does NOT affect layout) */
-/* ============================= */
-.messages {
-  position: fixed;
-  top: 18px;                
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1200;           
-  width: auto;
-  max-width: 900px;
-  padding: 0 12px;          
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none;     
-  transition: none;
+.buy-ticket-page .message {
+    pointer-events: auto;
+    display: inline-block;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-weight: 600;
+    margin: 0;
 }
 
-/* banner itself handles pointer events (click-to-dismiss) */
-.message {
-  pointer-events: auto;
-  display: inline-block;
-  margin: 0;                 /* remove bottom margin so wrapper controls spacing */
-  border-radius: 10px;
-}
-
-
-/* ✅ Success Message */
-.message.success {
+/* Message Variants */
+.buy-ticket-page .message.success {
     background-color: #e6ffed;
     color: #0f5132;
     border-left: 5px solid #198754;
 }
 
-/* ⚠️ Warning Message */
-.message.warning {
+.buy-ticket-page .message.warning {
     background-color: #fff3cd;
     color: #856404;
     border-left: 5px solid #ffca2c;
 }
 
-/* ❌ Error Message */
-.message.error {
+.buy-ticket-page .message.error {
     background-color: #f8d7da;
     color: #842029;
     border-left: 5px solid #dc3545;
 }
 
-/* ℹ️ Info Message */
-.message.info {
+.buy-ticket-page .message.info {
     background-color: #cfe2ff;
     color: #084298;
     border-left: 5px solid #0d6efd;
 }
-.lead-note {
-    background: #fff;
-    border: 1px solid #f0f0f0;
-    padding: 12px 16px;
-    border-radius: 8px;
-    color: #555;
-    margin: 10px 0 18px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    font-weight: 600;
-    line-height: 1.3;
-}
 
-/* smaller modifier to reduce size slightly */
-.lead-note.smaller {
-    font-size: 0.95rem; /* smaller than normal message */
-    padding-top: 10px;
-    padding-bottom: 10px;
-}
-/* Auto banner enter/exit animations (popup then fade out) */
-.message.auto-banner {
-    display: inline-block;
-    transform-origin: top center;
-    will-change: opacity, transform;
-    cursor: pointer;
-}
-
-/* keep your auto-enter/exit animations */
-.message.auto-banner.auto-enter {
-  animation: popIn 700ms cubic-bezier(.2,.9,.2,1) forwards;
-}
-.message.auto-banner.auto-exit {
-  animation: fadeOutUp 500ms ease-in forwards;
-}
-
-/* keyframes */
+/* Message Animations */
 @keyframes popIn {
-    0% {
-        opacity: 0;
-        transform: translateY(-10px) scale(0.1);
-    }
-    60% {
-        opacity: 1;
-        transform: translateY(0px) scale(1.07);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0px) scale(1);
-    }
+    0% { opacity: 0; transform: translateY(-10px) scale(0.1); }
+    60% { opacity: 1; transform: translateY(0) scale(1.07); }
+    100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes fadeOutUp {
-    0% {
-        opacity: 1;
-        transform: translateY(0px);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(-8px);
-    }
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-8px); }
 }
 
-/* Fade-in animation for messages */
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-15px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+.buy-ticket-page .auto-enter { animation: popIn 0.7s ease forwards; }
+.buy-ticket-page .auto-exit { animation: fadeOutUp 0.5s ease forwards; }
 
-/* ============================= */
+/* ===================================================== */
 /* Back Button */
-/* ============================= */
-.back-btn-container {
+/* ===================================================== */
+
+.buy-ticket-page .back-btn-container {
     position: absolute;
     top: 20px;
     left: 30px;
 }
 
-.back-btn {
+.buy-ticket-page .back-btn {
     background-color: #fff;
     color: #103c6e;
     border: 2px solid #103c6e;
@@ -163,87 +107,85 @@ body {
     transition: 0.3s;
 }
 
-.back-btn:hover {
+.buy-ticket-page .back-btn:hover {
     background-color: #103c6e;
     color: #fff;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
 }
-.fade-in-btn {
-    animation: fadeInUp 0.6s ease-out forwards;
+
+/* Fade-in for back button */
+.buy-ticket-page .fade-in-btn {
     opacity: 0;
+    animation: fadeInUp 0.6s ease-out forwards;
 }
 
+/* ===================================================== */
+/* QR Container */
+/* ===================================================== */
 
-
-/* ============================= */
-/* QR Container (card) */
-/* ============================= */
-.qr-container {
+.buy-ticket-page .qr-container {
     width: 90%;
     max-width: 700px;
     margin: 150px auto 60px auto;
+    padding: 40px;
     background: #fff;
     border-radius: 12px;
-    padding: 40px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
     text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
     animation: fadeInUp 0.8s ease-out forwards;
 }
 
-.qr-container h1 {
+.buy-ticket-page .qr-container h1 {
     font-size: 2rem;
     color: #103c6e;
     margin-bottom: 15px;
-    font-weight: 700;
 }
 
-.message {
-    font-size: 1rem;
+/* ===================================================== */
+/* Lead Note */
+/* ===================================================== */
+
+.buy-ticket-page .lead-note {
+    background: #fff;
+    border: 1px solid #eee;
+    padding: 12px 16px;
+    border-radius: 8px;
     color: #555;
-    margin-bottom: 25px;
+    font-weight: 600;
+    margin-bottom: 20px;
 }
 
-/* ============================= */
-/* QR Success Image */
-/* ============================= */
-.qr-success-icon img {
-    width: 180px;
-    height: auto;
-    margin: 20px 0;
-    animation: pop 0.7s ease-in-out;
-}
+/* ===================================================== */
+/* Transaction Summary */
+/* ===================================================== */
 
-/* ============================= */
-/* Transaction Summary (from inline CSS in Django template) */
-/* ============================= */
-.transaction-summary {
-    background-color: #f7f7f7;
+.buy-ticket-page .transaction-summary {
+    background: #f7f7f7;
     border: 1px solid #ddd;
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
     text-align: left;
 }
-.transaction-summary p {
-    margin: 5px 0;
-    font-size: 1.1em;
-}
-.transaction-summary strong {
+
+.buy-ticket-page .transaction-summary strong {
     display: inline-block;
-    width: 150px; /* Aligns the colons */
-}
-.new-balance {
-    color: #28a745; /* Green for success/balance */
-    font-weight: bold;
-    border-top: 1px solid #eee;
-    padding-top: 10px;
-    margin-top: 10px;
+    width: 150px;
 }
 
-/* ============================= */
+.buy-ticket-page .new-balance {
+    color: #28a745;
+    font-weight: bold;
+    border-top: 1px solid #eee;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+/* ===================================================== */
 /* Info Box */
-/* ============================= */
-.info-box {
+/* ===================================================== */
+
+.buy-ticket-page .info-box {
     background-color: #f8f9ff;
     border: 1px solid #dce3f3;
     border-radius: 10px;
@@ -251,80 +193,45 @@ body {
     text-align: center;
     font-size: 15px;
     color: #444;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     margin-top: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-.info-box strong {
+.buy-ticket-page .info-box strong {
     color: #103c6e;
 }
 
-/* ============================= */
+/* ===================================================== */
 /* Buttons */
-/* ============================= */
-.button-container {
+/* ===================================================== */
+
+.buy-ticket-page .button-container {
     display: flex;
     justify-content: center;
-    align-items: center;
     gap: 20px;
     margin-top: 35px;
-    flex-wrap: wrap;
 }
 
-.buy-btn {
+.buy-ticket-page .buy-btn {
     background-color: #103c6e;
-    color: #fff;
+    color: white;
     padding: 12px 25px;
     border-radius: 25px;
-    text-decoration: none;
     font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.3s;
+    text-decoration: none;
+    transition: 0.3s ease;
 }
 
-.buy-btn:hover {
+.buy-ticket-page .buy-btn:hover {
     background-color: #0d2e55;
     transform: translateY(-2px);
 }
 
-.bookmark-btn {
-    background-color: #ffeb3b;
-    color: black;
-    padding: 12px 25px;
-    border-radius: 25px;
-    text-decoration: none;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transition: background 0.3s, transform 0.2s;
-}
+/* ===================================================== */
+/* Fade In Animation */
+/* ===================================================== */
 
-.bookmark-btn:hover {
-    background-color: #fdd835;
-    transform: translateY(-2px);
-}
-
-/* ============================= */
-/* Animations */
-/* ============================= */
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes pop {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.2;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }

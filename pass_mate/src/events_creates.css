@@ -1,0 +1,200 @@
+/* ====================================================== */
+/* SCOPED STYLING — ONLY FOR CreateEvent                   */
+/* ====================================================== */
+
+.create-event-wrapper {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #e8f0ff, #f9f9f9);
+
+    /* Page scrolls */
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Reset only inside */
+.create-event-wrapper * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Back button aligned to container */
+.create-event-wrapper .back-btn-container {
+    width: 100%;
+    max-width: 750px;
+    margin-bottom: 20px;
+}
+
+.create-event-wrapper .back-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #007bff, #00a2ff);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.create-event-wrapper .back-btn:hover {
+    background: linear-gradient(135deg, #0066d3, #008cff);
+    transform: translateY(-2px) scale(1.05);
+}
+
+/* MAIN FORM CONTAINER — LESS WIDE NOW */
+.create-event-wrapper h1 {
+    width: 100%;
+    max-width: 750px;
+    text-align: center;
+    margin: 10px auto 28px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #103c6e;
+}
+
+/* FLEX LAYOUT — centered + narrower */
+.create-event-wrapper .event-layout {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+    max-width: 750px;
+    margin: 0 auto 30px auto;
+}
+
+/* Columns */
+.create-event-wrapper .event-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Form groups */
+.create-event-wrapper .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.create-event-wrapper .field-title,
+.create-event-wrapper label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #103c6e;
+}
+
+/* Inputs */
+.create-event-wrapper input,
+.create-event-wrapper select,
+.create-event-wrapper textarea {
+    width: 100%;
+    padding: 14px;
+    border: 1.5px solid #d0d7ff;
+    border-radius: 10px;
+    font-size: 15px;
+    background: #fff;
+}
+
+.create-event-wrapper input:focus,
+.create-event-wrapper textarea:focus,
+.create-event-wrapper select:focus {
+    border-color: #004aad;
+    box-shadow: 0 0 10px rgba(0,74,173,0.25);
+}
+
+/* Row layout */
+.create-event-wrapper .form-row {
+    display: flex;
+    gap: 18px;
+}
+
+.create-event-wrapper .half {
+    flex: 1;
+}
+
+/* Description (full width) */
+.create-event-wrapper .description-section {
+    width: 100%;
+    max-width: 750px;
+    margin: 0 auto 20px auto;
+}
+
+.create-event-wrapper textarea {
+    height: 150px;
+    resize: vertical;
+}
+
+/* Submit button */
+.create-event-wrapper .submit-center {
+    width: 100%;
+    max-width: 750px;
+    text-align: center;
+    margin: 20px auto 40px;
+}
+
+.create-event-wrapper .btn-submit {
+    width: 70%;
+    padding: 16px;
+    background: #103c6e;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.create-event-wrapper .btn-submit:hover {
+    background: #0a2b4d;
+    transform: translateY(-3px);
+}
+
+/* Error */
+.create-event-wrapper .error-message {
+    color: #d93025;
+    font-size: 14px;
+}
+
+/* ====================================================== */
+/* Fade-in Animations — Scoped to CreateEvent only         */
+/* ====================================================== */
+
+.create-event-wrapper .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: CEfadeInUp 1s ease-out forwards;
+}
+
+@keyframes CEfadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Delay utility classes */
+.create-event-wrapper .delay-1 { animation-delay: 0.2s; }
+.create-event-wrapper .delay-2 { animation-delay: 0.4s; }
+.create-event-wrapper .delay-3 { animation-delay: 0.6s; }
+.create-event-wrapper .delay-4 { animation-delay: 0.8s; }
+.create-event-wrapper .delay-5 { animation-delay: 1s; }
+
+/* Mobile */
+@media (max-width: 600px) {
+    .create-event-wrapper .event-layout {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .create-event-wrapper .btn-submit {
+        width: 100%;
+    }
+}

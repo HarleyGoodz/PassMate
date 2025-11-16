@@ -30,6 +30,10 @@ export default function Home({ user }) {
         <Link to="/my-tickets" className="ticket-btn-top fade-button fade-hover">
           🎟️ My Tickets
         </Link>
+
+        <Link to="/create-event" className="ticket-btn-top fade-button fade-hover create-event-btn">
+          Create Event
+        </Link>
       </div>
 
       {/* Top right Logout (only shown when authenticated) */}

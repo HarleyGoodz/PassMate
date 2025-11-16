@@ -1,0 +1,127 @@
+/* ====================================================== */
+/* SCOPED STYLING — ONLY FOR EventCreated page            */
+/* ====================================================== */
+
+.event-created-wrapper {
+    height: 100vh;
+    width: 100%;
+    background: #f9f9f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Reset only inside */
+.event-created-wrapper * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Container */
+.event-created-wrapper .confirm-container {
+    background: #fff;
+    padding: 40px 50px;
+    border-radius: 15px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+}
+
+/* Success icon */
+.event-created-wrapper .success-icon {
+    background: #28a745;
+    color: white;
+    font-size: 30px;
+    width: 60px;
+    height: 60px;
+    line-height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+    animation: popIn 0.6s ease-out forwards;
+}
+
+/* Text */
+.event-created-wrapper .confirm-container h2 {
+    color: #103c6e;
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+
+.event-created-wrapper .confirm-container p {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+/* Buttons */
+.event-created-wrapper .btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.event-created-wrapper .btn {
+    padding: 10px 22px;
+    border-radius: 25px;
+    border: 2px solid transparent;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+    text-decoration: none;
+}
+
+/* Primary */
+.event-created-wrapper .back-btn {
+    background: #103c6e;
+    color: #fff;
+    border: 2px solid #103c6e;
+}
+
+.event-created-wrapper .back-btn:hover {
+    background: #fff;
+    color: #103c6e;
+}
+
+/* Secondary */
+.event-created-wrapper .create-btn {
+    background: #fff;
+    color: #103c6e;
+    border: 2px solid #103c6e;
+}
+
+.event-created-wrapper .create-btn:hover {
+    background: #103c6e;
+    color: #fff;
+}
+
+/* Fade-in */
+.event-created-wrapper .fade-in {
+    opacity: 0;
+    transform: translateY(15px);
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* Fade-in animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Icon pop */
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    80% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); }
+}
