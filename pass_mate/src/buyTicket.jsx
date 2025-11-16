@@ -58,7 +58,7 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
   };
 
   return (
-    <div>
+     <div className="buy-ticket-page">
       {visibleMessages && visibleMessages.length > 0 && (
         <div className="messages">
           {visibleMessages.map((m, i) => (

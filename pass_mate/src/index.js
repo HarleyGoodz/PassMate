@@ -8,8 +8,11 @@ import Home from './Home';
 import EventDetails from './EventDetails'; // ✅ import your new component
 import BuyTicket from './buyTicket';
 import reportWebVitals from './reportWebVitals';
+import CreateEvent from './Create_Event';
 import MyTickets from './MyTickets';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import EventCreated from "./EventCreated";
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -35,7 +38,10 @@ root.render(
         <Route path="/signup" element={<SignUp />} />
         <Route path="/home" element={<Home user={{ isAuthenticated: false }} />} />
         <Route path="/app" element={<App />} />
+        <Route path="/create-event" element={<CreateEvent />} />
         <Route path="/event/:id/buy" element={<BuyTicket />} />
+        <Route path="/event-created" element={<EventCreated />} />
+
 
         {/* Event details route */}
         <Route
