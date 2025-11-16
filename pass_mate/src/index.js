@@ -12,6 +12,7 @@ import CreateEvent from './Create_Event';
 import MyTickets from './MyTickets';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import EventCreated from "./EventCreated";
+import EventList from "./EventList";
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -41,6 +42,27 @@ root.render(
         <Route path="/create-event" element={<CreateEvent />} />
         <Route path="/event/:id/buy" element={<BuyTicket />} />
         <Route path="/event-created" element={<EventCreated />} />
+        <Route
+  path="/events"
+  element={
+    <EventList
+      events={[
+        {
+          id: 1,
+          event_name: "Sample Event",
+          event_venue: "CIT-U",
+          event_category: "Seminar",
+          event_date: "2025-11-20",
+          event_time_in: "10:00 AM",
+          event_time_out: "2:00 PM",
+          ticket_price: 500,
+          ticket_limit: 100,
+          event_description: "Sample description"
+        }
+      ]}
+    />
+  }
+/>
 
 
         {/* Event details route */}
