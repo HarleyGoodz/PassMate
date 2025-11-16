@@ -13,6 +13,7 @@ import MyTickets from './MyTickets';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import EventCreated from "./EventCreated";
 import EventList from "./EventList";
+import EditEvent from "./edit_event";
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -42,6 +43,7 @@ root.render(
         <Route path="/create-event" element={<CreateEvent />} />
         <Route path="/event/:id/buy" element={<BuyTicket />} />
         <Route path="/event-created" element={<EventCreated />} />
+        <Route path="/edit-event/:id" element={<EditEvent />} />
         <Route
   path="/events"
   element={
