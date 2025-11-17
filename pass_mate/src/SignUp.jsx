@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import axios from "axios"; // ✅ added axios
 import "./SignUp.css";
-import logo from "./assets/logo.png";          // <-- update if in another folder
-import backgroundImage from "./assets/event_background.png"; // optional if you want inline background
+import logo from "./assets/logo.png";
+import backgroundImage from "./assets/event_background.png";
 
 const SignUp = () => {
   const [form, setForm] = useState({
@@ -20,21 +21,40 @@ const SignUp = () => {
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    // Example validation (React version)
-    if (form.password1 !== form.password2) {
-      setMessages([{ type: "error", text: "Passwords do not match." }]);
-      return;
+  if (form.password1 !== form.password2) {
+    setMessages([{ type: "error", text: "Passwords do not match." }]);
+    return;
+  }
+
+  try {
+    const response = await axios.post("http://localhost:8080/api/user/add", {
+      emailAddress: form.gmail,
+      fullname: form.username,
+      password: form.password1,
+      role: "user",
+    });
+
+    // backend returns a user object → treat as success
+    if (response.data && response.data.userId) {
+      setMessages([{ type: "success", text: "Account created successfully!" }]);
+    } else {
+      setMessages([{ type: "error", text: "Registration failed." }]);
     }
 
-    console.log("Submitted:", form);
-  };
+  } catch (error) {
+    console.error(error);
+    setMessages([{ type: "error", text: "Registration failed. Server error." }]);
+  }
+};
 
   return (
-    <div className="registration-container"
-         style={{ backgroundImage: `url(${backgroundImage})` }}>
+    <div
+      className="registration-container"
+      style={{ backgroundImage: `url(${backgroundImage})` }}
+    >
       <div className="registration-overlay"></div>
 
       <div className="form-box">
@@ -59,10 +79,11 @@ const SignUp = () => {
 
         {/* Sign Up Form */}
         <form className="register-form" onSubmit={handleSubmit}>
-
           {/* Email / Username */}
           <div className="input-field-group">
-            <span className="input-icon"><i className="fas fa-envelope"></i></span>
+            <span className="input-icon">
+              <i className="fas fa-envelope"></i>
+            </span>
             <input
               type="text"
               name="username"
@@ -75,7 +96,9 @@ const SignUp = () => {
 
           {/* Gmail Account */}
           <div className="input-field-group">
-            <span className="input-icon"><i className="fas fa-at"></i></span>
+            <span className="input-icon">
+              <i className="fas fa-at"></i>
+            </span>
             <input
               type="email"
               name="gmail"
@@ -88,7 +111,9 @@ const SignUp = () => {
 
           {/* Password */}
           <div className="input-field-group">
-            <span className="input-icon"><i className="fas fa-lock"></i></span>
+            <span className="input-icon">
+              <i className="fas fa-lock"></i>
+            </span>
             <input
               type="password"
               name="password1"
@@ -101,7 +126,9 @@ const SignUp = () => {
 
           {/* Confirm Password */}
           <div className="input-field-group">
-            <span className="input-icon"><i className="fas fa-lock"></i></span>
+            <span className="input-icon">
+              <i className="fas fa-lock"></i>
+            </span>
             <input
               type="password"
               name="password2"
@@ -112,14 +139,18 @@ const SignUp = () => {
             />
           </div>
 
-          <button className="btn-signup" type="submit">Sign Up</button>
+          <button className="btn-signup" type="submit">
+            Sign Up
+          </button>
         </form>
 
         {/* Login Link */}
         <div className="login-link">
           <p>
             Have an account already?{" "}
-            <a href="/login" className="register-here-link">Login here</a>
+            <a href="/login" className="register-here-link">
+              Login here
+            </a>
           </p>
         </div>
       </div>
