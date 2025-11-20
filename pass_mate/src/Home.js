@@ -1,8 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./home_style.css";
 import { Link } from "react-router-dom";
+import bg1 from "./assets/event_background3.png";
+import bg2 from "./assets/event_background2.png";
+import bg3 from "./assets/event_background.png";
 
 export default function Home({ user }) {
+  const backgrounds = [bg1, bg2, bg3];
+
+  const [bgIndex, setBgIndex] = useState(0);
+  const [prevBgIndex, setPrevBgIndex] = useState(0);
+
+  // 🔁 how often the background changes (in ms)
+  const SLIDE_INTERVAL = 10000; // 8000 = 8 seconds
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % backgrounds.length);
+    }, SLIDE_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const [query, setQuery] = useState("");
   const [events, setEvents] = useState([
     { id: 1, event_name: "Concert A" },
@@ -31,11 +50,17 @@ export default function Home({ user }) {
           🎟️ My Tickets
         </Link>
 
-        <Link to="/create-event" className="ticket-btn-top fade-button fade-hover create-event-btn">
+        <Link
+          to="/create-event"
+          className="ticket-btn-top fade-button fade-hover create-event-btn"
+        >
           Create Event
         </Link>
 
-        <Link to="/events" className="ticket-btn-top fade-button fade-hover create-event-btn">
+        <Link
+          to="/events"
+          className="ticket-btn-top fade-button fade-hover create-event-btn"
+        >
           Your Events
         </Link>
       </div>
@@ -53,11 +78,21 @@ export default function Home({ user }) {
         )}
       </div>
 
-      {/* Hero Section */}
-      <div className="hero fade-in">
+      {/* Hero Section */} 
+      <div className="hero">
+        <div
+          className="hero-bg hero-bg-base"
+          style={{ backgroundImage: `url(${backgrounds[prevBgIndex]})` }}
+        />
+        <div
+          key={bgIndex}
+          className="hero-bg hero-bg-slide"
+          style={{ backgroundImage: `url(${backgrounds[bgIndex]})` }}
+        />
+
         <h1>
           Skip the Line.<br />
-          <span>Join the Fun.</span>
+          <span className="headline-subtitle">Join the Fun.</span>
         </h1>
 
         <div className="search-bar fade-in delay-1">
@@ -68,7 +103,9 @@ export default function Home({ user }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <button type="submit" aria-label="Search">🔍</button>
+            <button type="submit" aria-label="Search">
+              🔍
+            </button>
           </form>
         </div>
 
@@ -96,8 +133,12 @@ export default function Home({ user }) {
           </div>
         ) : query ? (
           <div className="no-results">
-            <p>No event named "<strong>{query}</strong>" found.</p>
-            <Link to="/" className="back-btn">⬅ Go Back</Link>
+            <p>
+              No event named "<strong>{query}</strong>" found.
+            </p>
+            <Link to="/" className="back-btn">
+              ⬅ Go Back
+            </Link>
           </div>
         ) : (
           <p>No events available yet.</p>
