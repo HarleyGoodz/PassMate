@@ -1,8 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import Login from './Login';
-import SignUp from './SignUp';
+import Login from './js/Login';
+import SignUp from './js/SignUp';
 import App from './App';
 import Home from './Home';
 import EventDetails from './EventDetails'; // ✅ import your new component
@@ -14,6 +14,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import EventCreated from "./EventCreated";
 import EventList from "./EventList";
 import EditEvent from "./edit_event";
+import AuthPage from './js/AuthPage';
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -35,9 +36,9 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/signup" element={<AuthPage mode="signup" />} />
         <Route path="/home" element={<Home user={{ isAuthenticated: false }} />} />
         <Route path="/app" element={<App />} />
         <Route path="/create-event" element={<CreateEvent />} />

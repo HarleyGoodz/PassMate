@@ -1,0 +1,399 @@
+/* AuthPage.css */
+
+/* Base container */
+.page-container {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* Dark overlay + slight blur */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(251, 146, 60, 0.15), transparent 60%),
+              rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+}
+
+/* Little floating glow blobs for fun */
+.page-container::before,
+.page-container::after {
+  content: "";
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 999px;
+  filter: blur(40px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.page-container::before {
+  background: rgba(251, 146, 60, 0.6);
+  top: 8%;
+  left: 12%;
+  animation: blobFloat 14s ease-in-out infinite alternate;
+}
+
+.page-container::after {
+  background: rgba(59, 130, 246, 0.45);
+  bottom: 4%;
+  right: 16%;
+  animation: blobFloat 18s ease-in-out infinite alternate-reverse;
+}
+
+/* Form box */
+.form-box {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 28rem;
+  padding: 2.6rem 2.4rem;
+  background: rgba(23, 29, 41, 0.1); /* more transparent */
+  backdrop-filter: blur(10px);       
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 1.8rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+  animation: floatIn 0.5s ease-out forwards;
+}
+
+/* gentle breathing hover */
+.form-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* Logo section */
+.logo-section {
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.qr-logo {
+  width: 5rem;
+  height: 5rem;
+  display: inline-block;
+  margin-bottom: 1rem;
+  animation: pulse-slow 3s ease-in-out infinite;
+  filter: drop-shadow(0 6px 12px rgba(251, 146, 60, 0.4));
+}
+
+.brand-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #f9fafb;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.6px;
+}
+
+.brand-cit {
+  color: #fb923c;
+}
+
+.tagline {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Alerts */
+.alert {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  animation: slideDown 0.4s ease-out forwards;
+}
+
+.alert.success {
+  background: rgba(22, 163, 74, 0.18);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.alert.error {
+  background: rgba(185, 28, 28, 0.18);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+}
+
+/* Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Input groups – pill + icon */
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.35rem;
+  background: rgba(255, 255, 255, 0.9);   /* ⬅️ light background */
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+  transition: all 0.22s ease;
+  opacity: 0;
+  animation: slideRight 0.4s ease-out forwards;
+}
+
+.input-group:nth-child(1) {
+  animation-delay: 0.08s;
+}
+.input-group:nth-child(2) {
+  animation-delay: 0.14s;
+}
+.input-group:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.input-group:nth-child(4) {
+  animation-delay: 0.26s;
+}
+
+.input-group:focus-within {
+  border-color: #fb923c;
+  box-shadow:
+    0 0 0 1px rgba(251, 146, 60, 0.35),
+    0 12px 24px rgba(15, 23, 42, 0.55);
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 1);     /* a bit brighter on focus */
+}
+
+/* Icon bubble */
+.input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 1);     /* light icon background */
+  font-size: 1.1rem;
+  color: #fb923c;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.25);
+}
+
+/* the actual input */
+.input-group input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.75rem 1rem 0.75rem 0.3rem;
+  color: #0f172a;                         /* dark text */
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.input-group input::placeholder {
+  color: #9ca3af;                         /* softer gray placeholder */
+}
+
+/* Button */
+.btn-main {
+  width: 100%;
+  background: linear-gradient(to right, #f97316, #ea580c);
+  color: white;
+  font-weight: 600;
+  padding: 0.9rem 1rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45); /* subtle */
+  /* removed animation + opacity stuff */
+  margin-top: 0.9rem;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+}
+
+.btn-main:hover {
+  background: linear-gradient(to right, #ea580c, #c2410c);
+  transform: translateY(-1px);
+}
+
+.btn-main:active {
+  transform: translateY(0);
+}
+
+/* Switch link */
+.switch-link {
+  text-align: center;
+  margin-top: 1.8rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.24);
+  animation: fadeIn 0.8s ease-out forwards;
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+.switch-link p {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.link-accent {
+  color: #fb923c;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-accent:hover {
+  color: #fed7aa;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes blobFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(40px, -30px, 0) scale(1.1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .form-box {
+    padding: 2.2rem 1.7rem;
+    margin: 1.25rem;
+    border-radius: 1.4rem;
+  }
+
+  .brand-name {
+    font-size: 1.7rem;
+  }
+
+  .qr-logo {
+    width: 3.8rem;
+    height: 3.8rem;
+  }
+
+  .page-container::before,
+  .page-container::after {
+    display: none; 
+  }
+}
+
+
+/* Footer area under the button */
+.switch-link {
+  margin-top: 1.6rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.24); /* thin line */
+  text-align: center;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+/* The paragraph text */
+.switch-link p {
+  margin: 0;
+}
+
+/* The “Sign up here / Login here” part */
+.link-accent {
+  color: #fb923c;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 0.15rem;
+  transition: color 0.2s ease;
+}
+
+/* Make it look like a link even though it's a <button> */
+.link-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* Hover state */
+.link-accent:hover {
+  color: #fed7aa;
+  text-decoration: underline;
+}
+
+
