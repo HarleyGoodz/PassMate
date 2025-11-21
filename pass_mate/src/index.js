@@ -5,15 +5,15 @@ import Login from './js/Login';
 import SignUp from './js/SignUp';
 import App from './App';
 import Home from './Home';
-import EventDetails from './EventDetails'; // ✅ import your new component
-import BuyTicket from './buyTicket';
+import EventDetails from './js/EventDetails'; // ✅ import your new component
+import BuyTicket from './js/buyTicket';
 import reportWebVitals from './reportWebVitals';
-import CreateEvent from './Create_Event';
-import MyTickets from './MyTickets';
+import CreateEvent from './js/Create_Event';
+import MyTickets from './js/MyTickets';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import EventCreated from "./EventCreated";
-import EventList from "./EventList";
-import EditEvent from "./edit_event";
+import EventList from "./js/EventList";
+import EditEvent from "./js/edit_event";
 import AuthPage from './js/AuthPage';
 
 

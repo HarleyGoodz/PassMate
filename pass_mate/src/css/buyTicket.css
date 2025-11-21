@@ -1,0 +1,141 @@
+.buyticket-page {
+  min-height: 100vh;
+  background: #f9f9f9;
+  padding: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* BACK BUTTON (top right) */
+.buyticket-back-btn {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+
+  background: white;
+  border: 1px solid #000;
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  color: black;
+  text-decoration: none;
+}
+
+.buyticket-back-btn:hover {
+  background: #f2f2f2;
+}
+
+/* MAIN CARD */
+.buyticket-card {
+  width: 90%;
+  max-width: 850px;
+  padding: 40px;
+  border-radius: 15px;
+
+  background: linear-gradient(
+    135deg,
+    #ffce8a,
+    #ffb178,
+    #ffa86c,
+    #79d7c8,
+    #9be3cf
+  );
+  background-size: 200% 200%;
+  animation: gradientMove 6s ease infinite;
+
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  text-align: center;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* TITLE */
+.buyticket-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 25px;
+}
+
+/* LEAD TEXT */
+.lead-text {
+  background: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 15px;
+  margin-bottom: 25px;
+}
+
+/* SUMMARY BOX */
+.summary-box {
+  background: white;
+  padding: 18px 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+.summary-box .row {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+
+.summary-box .balance .green {
+  color: green;
+  font-weight: bold;
+}
+
+/* INFO BOX */
+.info-box {
+  background: white;
+  padding: 15px 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* NOTE BOX */
+.note-box {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+/* BUTTON */
+.center-btn {
+  display: flex;
+  justify-content: center;
+}
+
+.home-btn {
+  padding: 12px 25px;
+  background: black;
+  color: white;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.home-btn:hover {
+  opacity: 0.85;
+}
+
+/* ANIMATION */
+.fade-in {
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

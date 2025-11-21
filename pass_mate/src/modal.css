@@ -7,50 +7,57 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(8, 12, 20, 0.45);
-  backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
   animation: fadeIn 0.25s ease-out;
   z-index: 1500;
 }
 
 /* ===============================
-   MODAL CONTAINER
+   MODAL CARD CONTAINER
    =============================== */
 .modal {
   width: 100%;
-  max-width: 440px;
-  background: #ffffff;
+  max-width: 460px;
+  background: #fff;
   border-radius: 18px;
-  padding: 0;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
   overflow: hidden;
+
+  /* Warm soft shadow like your event cards */
+  box-shadow: 0px 12px 30px rgba(0, 0, 0, 0.25);
+
   animation: popIn 0.28s cubic-bezier(.25,.9,.25,1);
-  transform-origin: center;
 }
 
 /* ===============================
-   HEADER
+   HEADER — warm gradient
    =============================== */
 .modal-header {
-  background: linear-gradient(135deg, #007bff15, #00a2ff10);
   padding: 1.1rem 1.4rem;
-  border-bottom: 1px solid #e9eef6;
+  border-bottom: 1px solid #f3d8b8;
+
+  /* Same gradient vibe as your event background */
+  background: linear-gradient(
+    135deg,
+    #ffcf72aa,
+    #ffa87caa,
+    #70d6c4aa
+  );
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: #004aad;
-  letter-spacing: 0.3px;
+  color: #5a3b10; /* warm brown-ish, readable */
 }
 
 /* ===============================
    BODY
    =============================== */
 .modal-body {
-  padding: 1.2rem 1.4rem;
-  color: #3a3a3a;
+  padding: 1.4rem;
+  color: #333;
   font-size: 0.98rem;
   line-height: 1.45rem;
 }
@@ -61,42 +68,44 @@
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.6rem;
-  padding: 0.9rem 1.4rem;
-  background: #f7f9fc;
-  border-top: 1px solid #e7edf4;
+  gap: 0.7rem;
+  padding: 1rem 1.4rem;
+  background: #fff7ef;
+  border-top: 1px solid #f3d8b8;
 }
 
-/* BUTTONS */
+/* ===============================
+   BUTTONS
+   =============================== */
 .modal-btn {
-  padding: 0.52rem 1.1rem;
-  border-radius: 10px;
+  padding: 0.55rem 1.2rem;
+  border-radius: 25px;
   border: none;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
-  transition: all 0.2s ease;
+  transition: 0.2s ease;
 }
 
-/* Cancel Button */
+/* Cancel Button (white with black border — matches your UI) */
 .modal-btn-cancel {
-  background: #f0f3f8;
-  color: #4b4b4b;
+  background: white;
+  border: 2px solid black;
+  color: black;
 }
 
 .modal-btn-cancel:hover {
-  background: #e4e8ef;
+  background: #f2f2f2;
 }
 
-/* Confirm Button (matches Create/Delete buttons) */
+/* Confirm Button (black button — consistent with Buy Ticket Now & Save buttons) */
 .modal-btn-confirm {
-  background: linear-gradient(135deg, #007bff, #00a2ff);
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+  background: black;
+  color: white;
 }
 
 .modal-btn-confirm:hover {
-  filter: brightness(1.05);
+  opacity: 0.85;
   transform: translateY(-1px);
 }
 
@@ -109,6 +118,12 @@
 }
 
 @keyframes popIn {
-  from { opacity: 0; transform: scale(0.92) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }

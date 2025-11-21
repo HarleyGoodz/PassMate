@@ -1,0 +1,156 @@
+/* Page Background */
+.create-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: #fae7d5;
+  padding: 40px;
+  font-family: "Poppins", sans-serif;
+
+  opacity: 0;
+  animation: fadeInPage 0.8s ease-out forwards;
+}
+
+/* Back Button */
+.back-home {
+  display: inline-block;
+  padding: 6px 18px;
+  border-radius: 20px;
+  border: 1px solid #333;
+  font-size: 14px;
+  text-decoration: none;
+  color: black;
+  background: white;
+  margin-bottom: 20px;
+
+  opacity: 0;
+  animation: fadeInUp 0.7s ease forwards;
+  animation-delay: 0.2s;
+}
+
+/* Title */
+.title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #f6a533;
+  margin-bottom: 40px;
+
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: fadeDown 0.8s ease forwards;
+  animation-delay: 0.3s;
+}
+
+/* TWO COLUMN GRID */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 35px 40px;
+  width: 85%;
+  max-width: 900px;
+  margin: auto;
+
+  opacity: 0;
+  animation: fadeInUp 0.9s ease forwards;
+  animation-delay: 0.45s;
+}
+
+.form-row-2 {
+  display: flex;
+  gap: 15px;
+}
+
+.form-row-2 .small input {
+  width: 100%;
+}
+
+/* Form labels */
+.form-group label {
+  font-size: 14px;
+  color: black !important;
+  font-weight: 600;
+}
+
+/* Inputs */
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid #777;
+  border-radius: 10px;
+  font-size: 14px;
+  background: white;
+
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.7s ease forwards;
+}
+
+.form-group:nth-child(1) input { animation-delay: 0.55s; }
+.form-group:nth-child(2) input { animation-delay: 0.65s; }
+.form-group:nth-child(3) input { animation-delay: 0.75s; }
+.form-group:nth-child(4) input { animation-delay: 0.85s; }
+.form-group:nth-child(5) input { animation-delay: 0.95s; }
+.form-group:nth-child(6) input { animation-delay: 1.05s; }
+.form-group:nth-child(7) input { animation-delay: 1.15s; }
+
+/* Description full width */
+.description {
+  width: 85%;
+  max-width: 900px;
+  margin: 35px auto 0;
+}
+
+.description textarea {
+  height: 150px;
+  resize: vertical;
+
+  opacity: 0;
+  animation: fadeInUp 1.2s ease forwards;
+}
+
+/* Submit Button */
+.submit-btn {
+  display: block;
+  margin: 40px auto 0;
+  width: 250px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+
+  opacity: 0;
+  animation: fadeInUp 1.4s ease forwards;
+}
+
+.submit-btn:hover {
+  opacity: 0.85;
+}
+
+/* Empty placeholder (balances layout) */
+.empty-box {
+  height: 0;
+}
+
+/* ------------------------------------------------------ */
+/* ANIMATIONS */
+/* ------------------------------------------------------ */
+
+@keyframes fadeInPage {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
