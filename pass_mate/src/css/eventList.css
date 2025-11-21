@@ -1,0 +1,137 @@
+/* PAGE */
+.eventlist-page {
+  background: #fae7d5;
+  min-height: 100vh;
+  padding: 30px;
+  font-family: "Poppins", sans-serif;
+}
+
+/* BACK BUTTON — unified design */
+.eventlist-back {
+  display: inline-block;
+  padding: 6px 20px;
+  background: white;
+  color: black;
+  border: 1.5px solid #000;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: 0.25s ease;
+  margin-bottom: 20px;
+}
+
+.eventlist-back:hover {
+  background: #f2f2f2;
+  transform: translateY(-1px);
+}
+
+
+/* TITLE */
+.eventlist-title {
+  text-align: center;
+  font-size: 40px;
+  font-weight: 700;
+  color: #f6a533;
+  margin-bottom: 35px;
+}
+
+/* WRAPPER – Left aligned */
+.eventlist-wrapper {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  justify-content: flex-start;    /* ⬅ LEFT ALIGN */
+  margin-left: 40px;
+}
+
+/* EVENT CARD */
+.eventlist-card {
+  width: 500px;
+  border-radius: 18px;
+  padding: 25px;
+  box-shadow: 0px 5px 15px rgba(0,0,0,0.25);
+
+  /* 🔥 CSS Gradient Background similar to uploaded image */
+  background: radial-gradient(circle at top left, #ffdf85, transparent 40%),
+              radial-gradient(circle at bottom right, #70d6c4, transparent 40%),
+              radial-gradient(circle at top right, #ffa87c, transparent 35%),
+              radial-gradient(circle at bottom left, #ffcf72, transparent 35%),
+              #f7b565;
+}
+
+/* EVENT TITLE */
+.eventlist-card .event-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 15px;
+}
+
+/* WHITE DETAILS BOX */
+.event-details-box {
+  background: white;
+  padding: 18px 22px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  box-shadow: 0px 3px 10px rgba(0,0,0,0.15);
+}
+
+.event-details-box p {
+  margin: 6px 0;
+  font-size: 15px;
+  color: black;
+}
+
+/* BUTTONS */
+.eventlist-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.edit-btn {
+  background: #ffb33f;
+  padding: 9px 22px;
+  border: none;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  opacity: 0.85;
+}
+
+.delete-btn {
+  background: #d90429;
+  padding: 9px 22px;
+  border: none;
+  border-radius: 25px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  opacity: 0.85;
+}
+
+/* EMPTY MESSAGE */
+.no-events {
+  text-align: center;
+  color: #444;
+  font-size: 18px;
+  width: 100%;
+}
+
+/* ANIMATION */
+.fade-in {
+  opacity: 0;
+  animation: fadeInUp 0.7s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

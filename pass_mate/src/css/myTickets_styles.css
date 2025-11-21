@@ -1,0 +1,195 @@
+/* ===================================================================== */
+/* GLOBAL STYLES */
+/* ===================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+/* Page */
+.ticket-page {
+    background: #ffffff;
+    min-height: 100vh;
+    animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* ===================================================================== */
+/* HEADER */
+/* ===================================================================== */
+.tickets-header {
+    background: linear-gradient(90deg, #ffb36c, #ffcb7f, #9bd0e3);
+    padding: 25px 0;
+    text-align: center;
+    position: relative;
+    opacity: 0;
+    animation: fadeInDown 0.9s ease forwards;
+}
+
+.btn-back-home {
+    position: absolute;
+    left: 20px;
+    top: 22px;
+    background: white;
+    padding: 6px 15px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    font-size: 0.8rem;
+    color: #000;
+    text-decoration: none;
+    font-weight: 500;
+    animation: fadeIn 1.5s ease forwards;
+}
+
+.btn-back-home:hover {
+    background: #f2f2f2;
+}
+
+.tickets-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+}
+
+/* ===================================================================== */
+/* TICKETS CONTAINER */
+/* ===================================================================== */
+.tickets-container {
+    width: 90%;
+    margin: 40px auto;
+    display: flex;
+    justify-content: flex-start;   /* MOVE EVERYTHING TO THE LEFT */
+    animation: fadeInUp 1s ease forwards;
+}
+
+/* Ticket Grid */
+.tickets-grid {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: flex-start;   /* LEFT ALIGN CARDS */
+    opacity: 0;
+    animation: fadeInUp 1.1s ease forwards;
+}
+
+/* ===================================================================== */
+/* TICKET CARDS */
+/* ===================================================================== */
+.ticket-card-new {
+    background: #ffcc66;
+    width: 320px;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.2);
+
+    /* fade + slide animation */
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeUpCard 0.9s ease forwards;
+}
+
+.ticket-card-new:nth-child(1) { animation-delay: 0.1s; }
+.ticket-card-new:nth-child(2) { animation-delay: 0.25s; }
+.ticket-card-new:nth-child(3) { animation-delay: 0.4s; }
+.ticket-card-new:nth-child(4) { animation-delay: 0.55s; }
+
+.ticket-card-new h3 {
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.ticket-card-new p {
+    margin: 3px 0;
+    font-size: 0.95rem;
+}
+
+/* ===================================================================== */
+/* DELETE BUTTON */
+/* ===================================================================== */
+.btn-delete-refund {
+    margin-top: 15px;
+    width: 100%;
+    background: #6b0101;
+    color: white;
+    padding: 10px 0;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+
+    opacity: 0;
+    animation: fadeIn 1.4s ease forwards;
+}
+
+.btn-delete-refund:hover {
+    opacity: 0.8;
+}
+
+/* ===================================================================== */
+/* NO TICKETS */
+/* ===================================================================== */
+.no-tickets {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-top: 50px;
+    color: #555;
+    opacity: 0;
+    animation: fadeInUp 1s ease forwards;
+}
+
+/* ===================================================================== */
+/* MESSAGES */
+/* ===================================================================== */
+.messages {
+    max-width: 700px;
+    margin: 20px auto;
+    text-align: center;
+    opacity: 0;
+    animation: fadeIn 0.8s ease forwards;
+}
+
+.alert {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.alert.success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left: 6px solid #28a745;
+}
+
+.alert.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left: 6px solid #dc3545;
+}
+
+/* ===================================================================== */
+/* ANIMATIONS */
+/* ===================================================================== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeUpCard {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
