@@ -37,8 +37,10 @@ root.render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<AuthPage mode="login" />} />
-        <Route path="/signup" element={<AuthPage mode="signup" />} />
+        {/* <Route path="/login" element={<AuthPage mode="login" />} /> */}
+        <Route path="/login" element={<Login />} /> 
+        {/* <Route path="/signup" element={<AuthPage mode="signup" />} /> */}
+        <Route path="/signup" element={<SignUp />} />
         <Route path="/home" element={<Home user={{ isAuthenticated: false }} />} />
         <Route path="/app" element={<App />} />
         <Route path="/create-event" element={<CreateEvent />} />
