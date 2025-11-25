@@ -22,11 +22,11 @@ export default function Login() {
       });
 
       if (response.data === "Success") {
-  setMessages([{ type: "success", text: "Login successful!" }]);
-  setTimeout(() => navigate("/home"), 400);
-} else {
-  setMessages([{ type: "error", text: response.data }]);
-}
+        setMessages([{ type: "success", text: "Login successful!" }]);
+        setTimeout(() => navigate("/home"), 400);
+      } else {
+        setMessages([{ type: "error", text: response.data }]);
+      }
     } catch (error) {
       setMessages([{ type: "error", text: "Login failed. Server error." }]);
     }
