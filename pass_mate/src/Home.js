@@ -11,8 +11,7 @@ export default function Home({ user }) {
   const [bgIndex, setBgIndex] = useState(0);
   const [prevBgIndex, setPrevBgIndex] = useState(0);
 
-  // 🔁 how often the background changes (in ms)
-  const SLIDE_INTERVAL = 10000; // 8000 = 8 seconds
+  const SLIDE_INTERVAL = 10000; 
 
   useEffect(() => {
     const interval = setInterval(() => {

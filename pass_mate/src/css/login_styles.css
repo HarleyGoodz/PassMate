@@ -4,8 +4,8 @@ body, html {
     padding: 0;
     height: 100%;
     width: 100%;
-    font-family: Arial, sans-serif; /* Using a common sans-serif font */
-    overflow: hidden; /* Prevent scrolling */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
 }
 
 /* --- Page Container --- */
@@ -19,61 +19,67 @@ body, html {
     justify-content: center;
     position: relative;
     padding: 20px;
-    box-sizing: border-box; /* Include padding in element's total dimensions */
+    box-sizing: border-box;
 }
 
-.page-container::before { /* Dark overlay */
+.page-container::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.65); /* Dark overlay from design */
+    background: rgba(0, 0, 0, 0.65);
     z-index: 1;
 }
 
-/* --- Form Box (The central card) --- */
+/* --- Form Box --- */
 .form-box {
     position: relative;
-    z-index: 2; /* Above the overlay */
-    background: rgba(0, 0, 0, 0.4); /* Semi-transparent dark background */
-    backdrop-filter: blur(5px); /* Subtle blur for modern effect */
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
     color: white;
-    max-width: 400px; /* Width matching the design image */
+    max-width: 400px;
     width: 100%;
-    padding: 30px 40px; /* Inner padding */
-    border-radius: 12px; /* Rounded corners from design */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 40px rgba(255, 140, 0, 0.15);
+    border: 1px solid rgba(255, 140, 0, 0.3);
     text-align: center;
-    animation: fadeIn 0.8s ease-out; /* Fade-in animation */
+    animation: fadeIn 0.8s ease-out;
 }
 
 /* --- Branding Section --- */
 .logo-section {
-    margin-bottom: 25px;
+    margin-bottom: 30px;
 }
 
-.qr-logo { /* Your QR code image (e.g., logo.png) */
-    width: 120px; /* Size from design */
+.qr-logo {
+    width: 130px;
     height: auto;
-    margin-bottom: 10px;
-    /* filter: brightness(0) invert(1); Makes logo white if it's dark */
+    margin-bottom: 15px;
     display: block;
     margin-left: auto;
     margin-right: auto;
+    filter: drop-shadow(0 4px 8px rgba(255, 140, 0, 0.3));
 }
 
 .brand-name {
-    font-size: 28px; /* Font size from design */
-    font-weight: 400;
-    margin-bottom: 5px;
-    color: #fff; /* Default white */
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #fff;
+    letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(255, 140, 0, 0.5);
 }
-.brand-event { color: #f8c300; } /* Yellow for "Event" from design */
-.brand-cit { color: #dc3545; } /* Red for "CIT" from design */
+
+.brand-cit {
+    color: #ff8c00;
+    font-weight: 700;
+    animation: glow 2s ease-in-out infinite alternate;
+}
 
 .tagline {
-    font-size: 14px; /* Font size from design */
-    color: #cccccc; /* Lighter grey for tagline */
+    font-size: 14px;
+    color: #b0b0b0;
     margin-bottom: 30px;
     font-style: italic;
     font-weight: 300;
@@ -81,187 +87,167 @@ body, html {
 
 /* --- Form Styles --- */
 .login-form {
-    margin-top: 15px;
+    margin-top: 20px;
 }
 
 .input-group {
-    display: flex; /* Flexbox for icon and input */
-    background-color: #EAEAEA; /* Light grey background from design */
-    border-radius: 12px; /* Rounded corners from design */
-    margin-bottom: 10px; /* Spacing between input groups */
-    overflow: hidden; /* Ensures rounded corners apply to children */
-    border: none; /* No border directly on the group, background handles it */
+    display: flex;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.input-group:focus-within {
+    border-color: #ff8c00;
+    box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.15);
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .input-icon {
-    background-color: #F0F0F0; /* Slightly lighter grey for icon background */
-    color: #333333; /* Darker grey for icon */
-    padding: 14px 15px; /* Padding for icon */
+    background-color: rgba(255, 140, 0, 0.15);
+    color: #ff8c00;
+    padding: 14px 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    border-right: 1px solid #ddd; /* Separator for icon */
+    font-size: 18px;
+    border-right: 1px solid rgba(255, 140, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.input-group:hover .input-icon {
+    color: #ffaa00;
+    background-color: rgba(255, 140, 0, 0.25);
 }
 
 .login-form input[type="text"],
 .login-form input[type="password"] {
-    flex-grow: 1; /* Input takes up remaining space */
-    padding: 14px 15px; /* Padding for input text */
+    flex-grow: 1;
+    padding: 14px 16px;
     border: none;
     outline: none;
-    background: transparent; /* Input background is part of the group */
-    font-size: 14px; /* Font size from design */
-    color: #333333; /* Dark text color for input */
+    background: transparent;
+    font-size: 15px;
+    color: #ffffff;
 }
 
 .login-form input::placeholder {
-    color: #888888; /* Darker placeholder text from design */
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .login-form input:focus {
-    background: #ffffff; /* White background on focus for clarity */
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    background: transparent;
 }
 
-.error-message { /* For Django form errors */
-    color: #ffda00; /* Yellow for errors */
+.error-message {
+    color: #ffda00;
     font-size: 12px;
-    margin-top: -8px; /* Adjust spacing */
-    margin-bottom: 10px;
+    margin-top: -8px;
+    margin-bottom: 12px;
     text-align: left;
     padding-left: 5px;
 }
 
-/* --- Forgot Password Link --- */
-.forgot-password-link {
-    text-align: right; /* Aligned to the right as in design */
-    margin-bottom: 20px; /* Space before button */
-    font-size: 13px; /* Smaller font size */
-}
-
-.forgot-password-link .forgot-link {
-    color: #aaaaaa; /* Subtle grey color from design */
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.forgot-password-link .forgot-link:hover {
-    color: #cccccc;
-    text-decoration: underline;
-}
-
 /* --- Login Button --- */
 .btn-login {
-    display: inline-block;   /* make it behave like a button */
-    text-align: center;      /* center the text */
-    width: 100%;             /* full width of parent */
-    padding: 14px;           /* vertical padding */
-    background: #1e3a5f;     /* button color */
-    color: white;            /* text color */
-    border: none;            /* remove border */
-    border-radius: 12px;     /* rounded corners */
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
     font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;         /* pointer on hover */
-    text-decoration: none;   /* remove underline from <a> */
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    transition: background-color 0.3s ease;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4);
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-login::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-login:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 .btn-login:hover {
-    background-color: #152a45; /* Slightly darker on hover */
+    background: linear-gradient(135deg, #ff6b00 0%, #ff5500 100%);
+    box-shadow: 0 6px 25px rgba(255, 140, 0, 0.6);
+    transform: translateY(-3px) scale(1.02);
 }
 
-/* --- Social Connect Section --- */
-.social-connect {
-    margin-top: 25px; /* Spacing */
-    padding-top: 20px; /* Spacing */
-    border-top: 1px solid rgba(255, 255, 255, 0.15); /* Horizontal line from design */
-}
-
-.social-connect-text {
-    font-size: 13px; /* Smaller text from design */
-    color: #cccccc; /* Light grey text */
-    margin-bottom: 15px;
-    font-weight: 300;
-}
-
-.social-icons {
-    display: flex;
-    justify-content: center;
-    gap: 15px; /* Spacing between icons from design */
-}
-
-.social-icon { /* Small circular icons from design */
-    width: 35px; /* Size from design */
-    height: 35px; /* Size from design */
-    border-radius: 50%; /* Circular */
-    background-color: rgba(255, 255, 255, 0.1); /* Subtle background */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.social-icon img { /* Image within the icon */
-    width: 20px; /* Smaller image size */
-    height: 20px;
-    object-fit: contain;
-    filter: invert(100%); /* Makes social icons white */
-}
-
-.social-icon:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+.btn-login:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 10px rgba(255, 140, 0, 0.3);
 }
 
 /* --- Register Link Section --- */
 .register-link {
-    margin-top: 25px; /* Spacing */
-    font-size: 14px; /* Font size from design */
-    color: #cccccc; /* Light grey text */
+    margin-top: 30px;
+    font-size: 14px;
+    color: #cccccc;
 }
 
 .register-link p {
-    margin: 0; /* Remove default paragraph margin */
+    margin: 0;
 }
 
 .register-link .register-here-link {
-    color: #dc3545; /* Red color for "Sign Up here" from design */
+    color: #ff8c00;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.2s ease;
 }
 
 .register-link .register-here-link:hover {
-    color: #bd2130;
+    color: #ff6b00;
     text-decoration: underline;
 }
 
 /* --- Messages (Alerts) --- */
 .alert {
-    padding: 10px 15px;
-    margin: -15px 0 20px 0; /* Adjust margin to integrate with form */
-    border-radius: 6px;
+    padding: 12px 16px;
+    margin: -10px 0 25px 0;
+    border-radius: 8px;
     font-size: 13px;
     text-align: center;
-    color: white; /* Ensure text is visible */
+    color: white;
+    font-weight: 500;
 }
 
-.alert.success { /* For Django messages tagged 'success' */
-    background-color: rgba(40, 167, 69, 0.8);
+.alert.success {
+    background-color: rgba(40, 167, 69, 0.9);
     border: 1px solid #28a745;
 }
-.alert.error, .alert.warning { /* For Django messages tagged 'error' or 'warning' */
-    background-color: rgba(220, 53, 69, 0.8);
+
+.alert.error {
+    background-color: rgba(220, 53, 69, 0.9);
     border: 1px solid #dc3545;
 }
 
-/* --- Accessibility / Hidden elements --- */
+/* --- Accessibility --- */
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -276,41 +262,66 @@ body, html {
 /* --- Responsive Adjustments --- */
 @media (max-width: 600px) {
     .form-box {
-        padding: 25px 20px;
+        padding: 30px 25px;
         margin: 10px;
     }
     .qr-logo {
-        width: 100px;
+        width: 110px;
     }
     .brand-name {
-        font-size: 24px;
+        font-size: 28px;
     }
     .tagline {
-        font-size: 12px;
-    }
-    .login-form input {
-        padding: 12px 15px;
         font-size: 13px;
     }
-    .btn-login {
-        padding: 12px;
+    .login-form input {
+        padding: 13px 15px;
         font-size: 14px;
     }
-    .social-icon {
-        width: 30px;
-        height: 30px;
-    }
-    .social-icon img {
-        width: 18px;
-        height: 18px;
-    }
-    .forgot-password-link, .register-link {
-        font-size: 12px;
+    .btn-login {
+        padding: 13px;
+        font-size: 15px;
     }
 }
 
 /* --- Keyframe for FadeIn animation --- */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { 
+        opacity: 0; 
+        transform: translateY(30px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes float {
+    0%, 100% { 
+        transform: translateY(0px); 
+    }
+    50% { 
+        transform: translateY(-10px); 
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+    }
+    50% { 
+        transform: scale(1.05); 
+    }
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 10px rgba(255, 140, 0, 0.5),
+                     0 0 20px rgba(255, 140, 0, 0.3);
+    }
+    to {
+        text-shadow: 0 0 20px rgba(255, 140, 0, 0.8),
+                     0 0 30px rgba(255, 140, 0, 0.5),
+                     0 0 40px rgba(255, 140, 0, 0.3);
+    }
 }

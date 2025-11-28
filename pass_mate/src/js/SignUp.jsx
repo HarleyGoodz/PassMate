@@ -4,6 +4,7 @@ import "../css/SignUp.css";
 import logo from "../assets/logo.png";
 import backgroundImage from "../assets/event_background.png";
 
+
 const SignUp = () => {
   const [form, setForm] = useState({
     username: "",
@@ -81,9 +82,7 @@ const SignUp = () => {
         <form className="register-form" onSubmit={handleSubmit}>
           {/* Email / Username */}
           <div className="input-field-group">
-            <span className="input-icon">
-              <i className="fas fa-envelope"></i>
-            </span>
+            <span className="input-icon">📧</span>
             <input
               type="text"
               name="username"
@@ -96,9 +95,7 @@ const SignUp = () => {
 
           {/* Gmail Account */}
           <div className="input-field-group">
-            <span className="input-icon">
-              <i className="fas fa-at"></i>
-            </span>
+            <span className="input-icon">📧</span>  
             <input
               type="email"
               name="gmail"
@@ -111,9 +108,7 @@ const SignUp = () => {
 
           {/* Password */}
           <div className="input-field-group">
-            <span className="input-icon">
-              <i className="fas fa-lock"></i>
-            </span>
+            <span className="input-icon">🔒</span>
             <input
               type="password"
               name="password1"
@@ -126,9 +121,7 @@ const SignUp = () => {
 
           {/* Confirm Password */}
           <div className="input-field-group">
-            <span className="input-icon">
-              <i className="fas fa-lock"></i>
-            </span>
+            <span className="input-icon">🔒</span>
             <input
               type="password"
               name="password2"
