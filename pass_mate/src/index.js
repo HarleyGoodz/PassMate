@@ -14,7 +14,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import EventCreated from "./EventCreated";
 import EventList from "./js/EventList";
 import EditEvent from "./js/edit_event";
-import AuthPage from './js/AuthPage';
+
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
