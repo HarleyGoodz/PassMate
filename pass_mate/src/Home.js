@@ -1,34 +1,122 @@
+// Home.jsx
 import React, { useState, useEffect } from "react";
 import "./home_style.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
 import bg1 from "./assets/event_background3.png";
 import bg2 from "./assets/event_background2.png";
 import bg3 from "./assets/event_background.png";
 
-export default function Home({ user }) {
+export default function Home() {
+  const navigate = useNavigate();
   const backgrounds = [bg1, bg2, bg3];
 
   const [bgIndex, setBgIndex] = useState(0);
   const [prevBgIndex, setPrevBgIndex] = useState(0);
+  const [events, setEvents] = useState([]);
+  const [query, setQuery] = useState("");
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
-  const SLIDE_INTERVAL = 10000; 
+  const SLIDE_INTERVAL = 10000;
 
+  // ✅ 1. Fetch logged-in session user
+  useEffect(() => {
+    let mounted = true;
+
+    fetch("http://localhost:8080/api/user/me", {
+      credentials: "include",
+    })
+      .then((res) => {
+        if (!res.ok) {
+          navigate("/login");
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (!mounted) return;
+        if (data) setUser(data);
+      })
+      .catch(() => navigate("/login"))
+      .finally(() => mounted && setLoadingUser(false));
+
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
+
+  // ✅ LOGOUT
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:8080/api/user/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {}
+    navigate("/login");
+  };
+
+  // Background Slideshow
   useEffect(() => {
     const interval = setInterval(() => {
+      setPrevBgIndex(bgIndex);
       setBgIndex((prev) => (prev + 1) % backgrounds.length);
     }, SLIDE_INTERVAL);
-
     return () => clearInterval(interval);
-  }, []);
+  }, [bgIndex]);
 
-  const [query, setQuery] = useState("");
-  const [events, setEvents] = useState([
-    { id: 1, event_name: "Concert A" },
-    { id: 2, event_name: "Exhibition B" },
-    { id: 3, event_name: "Comedy Show C" },
-    { id: 4, event_name: "Totoys band" },
-    { id: 5, event_name: "Harley's Band" },
-  ]);
+  // ✅ 2. Fetch all events BUT filter out user’s own events
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadEvents() {
+      try {
+        const res = await fetch("http://localhost:8080/api/events/all");
+        const data = await res.json();
+        if (!mounted) return;
+
+        const mapped = Array.isArray(data)
+          ? data.map((srv) => ({
+              id: srv.eventId ?? srv.id,
+              event_name: srv.eventName ?? srv.event_name,
+              event_venue: srv.eventVenue ?? srv.event_venue,
+              event_category: srv.eventCategory ?? srv.event_category,
+              event_date: srv.eventStartTime
+                ? String(srv.eventStartTime).split("T")[0]
+                : "",
+              event_time_in: srv.eventStartTime
+                ? String(srv.eventStartTime).split("T")[1]?.slice(0, 5)
+                : "",
+              event_time_out: srv.eventEndTime
+                ? String(srv.eventEndTime).split("T")[1]?.slice(0, 5)
+                : "",
+              event_description: srv.eventDescription ?? "",
+              ticket_limit: srv.ticketLimit ?? 0,
+              serverUserId: srv.user?.userId ?? null,
+            }))
+          : [];
+
+        // ⭐ FILTER OUT events created by the logged-in user
+        const notMine = mapped.filter(
+          (ev) => ev.serverUserId !== user?.userId
+        );
+
+        setEvents(notMine);
+      } catch (err) {
+        console.error("Event loading error:", err);
+      }
+    }
+
+    if (user) loadEvents();
+
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
+
+  if (loadingUser) return <div>Loading session...</div>;
+  if (!user) return null;
 
   const filteredEvents = query
     ? events.filter((e) =>
@@ -36,48 +124,36 @@ export default function Home({ user }) {
       )
     : events;
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    console.log("Searching for:", query);
-  };
-
   return (
     <div className="home-root">
-      {/* Top left My Tickets */}
+      {/* Welcome Message */}
+      {/* <h2 className="welcome-title fade-in">
+        Welcome, <span className="username">{user.fullname}</span> 👋
+      </h2> */}
+
+      {/* Top Left Buttons */}
       <div className="ticket-container">
-        <Link to="/my-tickets" className="ticket-btn-top fade-button fade-hover">
+        <Link to="/my-tickets" className="ticket-btn-top fade-hover">
           🎟️ My Tickets
         </Link>
 
-        <Link
-          to="/create-event"
-          className="ticket-btn-top fade-button fade-hover create-event-btn"
-        >
+        <Link to="/create-event" className="ticket-btn-top fade-hover">
           Create Event
         </Link>
 
-        <Link
-          to="/events"
-          className="ticket-btn-top fade-button fade-hover create-event-btn"
-        >
+        <Link to="/events" className="ticket-btn-top fade-hover">
           Your Events
         </Link>
       </div>
 
-      {/* Top right Logout (only shown when authenticated) */}
+      {/* Logout Button */}
       <div className="top-right-buttons">
-        {user?.isAuthenticated ? (
-          <Link to="/logout" className="logout-btn">
-            Logout
-          </Link>
-        ) : (
-          <Link to="/login" className="logout-btn fade-button fade-hover">
-            Logout
-          </Link>
-        )}
+        <button onClick={handleLogout} className="logout-btn fade-hover">
+          Logout
+        </button>
       </div>
 
-      {/* Hero Section */} 
+      {/* Hero Section */}
       <div className="hero">
         <div
           className="hero-bg hero-bg-base"
@@ -90,32 +166,26 @@ export default function Home({ user }) {
         />
 
         <h1>
-          Skip the Line.<br />
+          Skip the Line.
+          <br />
           <span className="headline-subtitle">Join the Fun.</span>
         </h1>
 
         <div className="search-bar fade-in delay-1">
-          <form onSubmit={handleSearch}>
-            <input
-              type="text"
-              placeholder="Search for event"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button type="submit" aria-label="Search">
-              🔍
-            </button>
-          </form>
+          <input
+            type="text"
+            placeholder="Search for events..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
 
         <p className="fade-in delay-2">
-          Get tickets to concerts, exhibitions, and entertainment events.
-          <br />
-          All in one place.
+          Find concerts, entertainment, and more — all from your dashboard.
         </p>
       </div>
 
-      {/* Event Grid Section */}
+      {/* Events List */}
       <div className="events-section fade-in">
         <h2>Available Events</h2>
 
@@ -124,23 +194,15 @@ export default function Home({ user }) {
             {filteredEvents.map((event) => (
               <div key={event.id} className="event-card">
                 <h3>{event.event_name}</h3>
+                <p className="small">{event.event_venue}</p>
                 <Link to={`/event/${event.id}`} className="view-btn">
                   View Details
                 </Link>
               </div>
             ))}
           </div>
-        ) : query ? (
-          <div className="no-results">
-            <p>
-              No event named "<strong>{query}</strong>" found.
-            </p>
-            <Link to="/" className="back-btn">
-              ⬅ Go Back
-            </Link>
-          </div>
         ) : (
-          <p>No events available yet.</p>
+          <p>No available events yet.</p>
         )}
       </div>
     </div>
