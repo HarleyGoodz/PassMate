@@ -1,55 +1,63 @@
+// SignUp.jsx
 import React, { useState } from "react";
-import axios from "axios"; // ✅ added axios
 import "../css/SignUp.css";
 import logo from "../assets/logo.png";
 import backgroundImage from "../assets/event_background.png";
 
-
-const SignUp = () => {
+export default function SignUp() {
   const [form, setForm] = useState({
     username: "",
     gmail: "",
     password1: "",
     password2: "",
   });
+  const [messages, setMessages] = useState([]);
 
-  const [messages, setMessages] = useState([]); // mimic Django messages
-
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    setMessages([]);
 
-  if (form.password1 !== form.password2) {
-    setMessages([{ type: "error", text: "Passwords do not match." }]);
-    return;
-  }
-
-  try {
-    const response = await axios.post("http://localhost:8080/api/user/add", {
-      emailAddress: form.gmail,
-      fullname: form.username,
-      password: form.password1,
-      role: "user",
-    });
-
-    // backend returns a user object → treat as success
-    if (response.data && response.data.userId) {
-      setMessages([{ type: "success", text: "Account created successfully!" }]);
-    } else {
-      setMessages([{ type: "error", text: "Registration failed." }]);
+    if (form.password1 !== form.password2) {
+      setMessages([{ type: "error", text: "Passwords do not match." }]);
+      return;
     }
 
-  } catch (error) {
-    console.error(error);
-    setMessages([{ type: "error", text: "Registration failed. Server error." }]);
-  }
-};
+    try {
+      const resp = await fetch("http://localhost:8080/api/user/add", {
+        method: "POST",
+        credentials: "include", // if server auto-logs-in after creation
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emailAddress: form.gmail,
+          fullname: form.username,
+          password: form.password1,
+          role: "user",
+        }),
+      });
+
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch (_) { data = text; }
+
+      if (!resp.ok) {
+        setMessages([{ type: "error", text: typeof data === "string" ? data : "Registration failed." }]);
+        return;
+      }
+
+      if (data && data.userId) {
+        setMessages([{ type: "success", text: "Account created successfully!" }]);
+        setForm({ username: "", gmail: "", password1: "", password2: "" });
+      } else {
+        setMessages([{ type: "error", text: "Registration failed." }]);
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      setMessages([{ type: "error", text: "Server error. Try again." }]);
+    }
+  };
 
   return (
     <div
@@ -59,28 +67,22 @@ const SignUp = () => {
       <div className="registration-overlay"></div>
 
       <div className="form-box">
-        {/* Logo Section */}
         <div className="logo-section">
           <img src={logo} alt="QR Code" className="qr-code-image" />
-
           <h1 className="brand-name">
             <span className="brand-event">Event</span>
             <span className="brand-cit"> CIT</span>
           </h1>
-
           <p className="tagline">Skip the line, scan your way in.</p>
         </div>
 
-        {/* Alerts */}
-        {messages.map((m, index) => (
-          <div key={index} className={`alert ${m.type}`}>
+        {messages.map((m, i) => (
+          <div key={i} className={`alert ${m.type}`}>
             {m.text}
           </div>
         ))}
 
-        {/* Sign Up Form */}
         <form className="register-form" onSubmit={handleSubmit}>
-          {/* Email / Username */}
           <div className="input-field-group">
             <span className="input-icon">📧</span>
             <input
@@ -93,9 +95,8 @@ const SignUp = () => {
             />
           </div>
 
-          {/* Gmail Account */}
           <div className="input-field-group">
-            <span className="input-icon">📧</span>  
+            <span className="input-icon">📧</span>
             <input
               type="email"
               name="gmail"
@@ -106,7 +107,6 @@ const SignUp = () => {
             />
           </div>
 
-          {/* Password */}
           <div className="input-field-group">
             <span className="input-icon">🔒</span>
             <input
@@ -119,7 +119,6 @@ const SignUp = () => {
             />
           </div>
 
-          {/* Confirm Password */}
           <div className="input-field-group">
             <span className="input-icon">🔒</span>
             <input
@@ -137,7 +136,6 @@ const SignUp = () => {
           </button>
         </form>
 
-        {/* Login Link */}
         <div className="login-link">
           <p>
             Have an account already?{" "}
@@ -149,6 +147,4 @@ const SignUp = () => {
       </div>
     </div>
   );
-};
-
-export default SignUp;
+}

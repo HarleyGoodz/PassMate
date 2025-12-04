@@ -1,3 +1,4 @@
+// index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -5,7 +6,7 @@ import Login from './js/Login';
 import SignUp from './js/SignUp';
 import App from './App';
 import Home from './Home';
-import EventDetails from './js/EventDetails'; // ✅ import your new component
+import EventDetails from './js/EventDetails';
 import BuyTicket from './js/buyTicket';
 import reportWebVitals from './reportWebVitals';
 import CreateEvent from './js/Create_Event';
@@ -15,106 +16,27 @@ import EventCreated from "./EventCreated";
 import EventList from "./js/EventList";
 import EditEvent from "./js/edit_event";
 
-
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
-
-// Example event data for testing
-const sampleEvent = {
-  id: 1,
-  event_name: "Sample Event",
-  event_venue: "Cebu City",
-  event_date: "2025-11-20",
-  event_time_in: "10:00 AM",
-  event_time_out: "2:00 PM",
-  ticket_price: 500,
-  ticket_limit: 100,
-  event_description: "This is a sample event description."
-};
 
 root.render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        {/* <Route path="/login" element={<AuthPage mode="login" />} /> */}
-        <Route path="/login" element={<Login />} /> 
-        {/* <Route path="/signup" element={<AuthPage mode="signup" />} /> */}
+        <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/home" element={<Home user={{ isAuthenticated: false }} />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/app" element={<App />} />
         <Route path="/create-event" element={<CreateEvent />} />
         <Route path="/event/:id/buy" element={<BuyTicket />} />
         <Route path="/event-created" element={<EventCreated />} />
         <Route path="/edit-event/:id" element={<EditEvent />} />
+        <Route path="/events" element={<EventList />} />
+        <Route path="/event/:id" element={<EventDetails />} />
         <Route
-  path="/events"
-  element={
-    <EventList
-      events={[
-        {
-          id: 1,
-          event_name: "Sample Event",
-          event_venue: "CIT-U",
-          event_category: "Seminar",
-          event_date: "2025-11-20",
-          event_time_in: "10:00 AM",
-          event_time_out: "2:00 PM",
-          ticket_price: 500,
-          ticket_limit: 100,
-          event_description: "Sample description"
-        }
-      ]}
-    />
-  }
-/>
-
-
-        {/* Event details route */}
-        <Route
-          path="/event/:id"
-          element={
-            <EventDetails
-              event={sampleEvent}          // ✅ pass your event data here
-              soldOut={false}             // example boolean
-              userHasTicket={false}       // example boolean
-            />
-          }
+          path="/my-tickets"
+          element={<MyTickets ticketsData={[]} />}
         />
-              <Route
-  path="/my-tickets"
-  element={
-    <MyTickets
-      ticketsData={[
-        // Example tickets for testing
-        {
-          id: 1,
-          event: {
-            event_name: "Sample Event 1",
-            event_venue: "Cebu City",
-            event_date: "2025-11-20",
-            event_time_in: "10:00 AM",
-            event_time_out: "2:00 PM",
-            ticket_price: 500,
-          },
-        },
-        {
-          id: 2,
-          event: {
-            event_name: "Sample Event 2",
-            event_venue: "Mandaue City",
-            event_date: "2025-11-25",
-            event_time_in: "1:00 PM",
-            event_time_out: "5:00 PM",
-            ticket_price: 750,
-          },
-        },
-      ]}
-    />
-  }
-/>
-
-        
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

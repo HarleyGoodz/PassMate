@@ -1,42 +1,81 @@
+// Login.jsx
 import React, { useState } from "react";
 import "../css/login_styles.css";
 import qrLogo from "../assets/logo.png";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 
 export default function Login() {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const [messages, setMessages] = useState([]); // show login success/error
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setMessages([]);
 
     try {
-      const response = await axios.post("http://localhost:8080/api/user/login", {
-        emailAddress: email,
-        password: password,
+      // 1️⃣ LOGIN → server sets JSESSIONID cookie
+      const resp = await fetch("http://localhost:8080/api/user/login", {
+        method: "POST",
+        credentials: "include", // VERY IMPORTANT
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emailAddress: email, password }),
       });
 
-      if (response.data === "Success") {
-        setMessages([{ type: "success", text: "Login successful!" }]);
-        setTimeout(() => navigate("/home"), 400);
-      } else {
-        setMessages([{ type: "error", text: response.data }]);
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch (_) { data = text; }
+
+      if (!resp.ok) {
+        setMessages([{ type: "error", text: typeof data === "string" ? data : "Login failed" }]);
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      setMessages([{ type: "error", text: "Login failed. Server error." }]);
+
+      // If login endpoint already returns user object
+      if (data && typeof data === "object" && data.userId) {
+        localStorage.setItem("userFullname", data.fullname || "");
+        localStorage.setItem("userId", String(data.userId));
+        localStorage.setItem("userEmail", data.emailAddress || "");
+        navigate("/home");
+        return;
+      }
+
+      // 2️⃣ Fetch user from session using /me
+      const who = await fetch("http://localhost:8080/api/user/me", {
+        credentials: "include",
+      });
+
+      if (!who.ok) {
+        setMessages([{ type: "error", text: "Login succeeded but cannot fetch session user." }]);
+        setLoading(false);
+        return;
+      }
+
+      const user = await who.json();
+
+      // Save UI data (not required for security)
+      localStorage.setItem("userFullname", user.fullname || "");
+      localStorage.setItem("userId", String(user.userId));
+      localStorage.setItem("userEmail", user.emailAddress || "");
+
+      setMessages([{ type: "success", text: "Login successful!" }]);
+      navigate("/home");
+
+    } catch (err) {
+      console.error("Login error:", err);
+      setMessages([{ type: "error", text: "Server error. Try again." }]);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="page-container">
       <div className="form-box">
-
-        {/* Logo & Branding */}
         <div className="logo-section">
           <img src={qrLogo} alt="QR Logo" className="qr-logo" />
           <h2 className="brand-name">
@@ -45,16 +84,13 @@ export default function Login() {
           <p className="tagline">Skip the line, scan your way in.</p>
         </div>
 
-        {/* Alerts */}
         {messages.map((m, index) => (
           <div key={index} className={`alert ${m.type}`}>
             {m.text}
           </div>
         ))}
 
-        {/* Login Form */}
         <form onSubmit={handleSubmit} className="login-form">
-
           <div className="input-group">
             <span className="input-icon">📧</span>
             <input
@@ -77,13 +113,11 @@ export default function Login() {
             />
           </div>
 
-          {/* REAL LOGIN BUTTON */}
-          <button className="btn-login" type="submit">
-            Log In
+          <button className="btn-login" type="submit" disabled={loading}>
+            {loading ? "Logging in..." : "Log In"}
           </button>
         </form>
 
-        {/* Register / Signup Link */}
         <div className="register-link">
           <p>
             Don’t have an account?{" "}
