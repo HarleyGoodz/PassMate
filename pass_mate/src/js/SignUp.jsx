@@ -106,7 +106,7 @@ export default function SignUp() {
             <input
               type="text"
               name="username"
-              placeholder="Type your email or username"
+              placeholder="Type your name"
               value={form.username}
               onChange={handleChange}
               required
