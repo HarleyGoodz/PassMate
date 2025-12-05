@@ -169,12 +169,16 @@ export default function Profile() {
               {!editing ? (
                 <div className="profile-value">{role}</div>
               ) : (
-                <input
-                  type="text"
+                <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  placeholder="Enter your role"
-                />
+                  className="profile-select"
+                >
+                  <option value="">Select role</option>
+                  <option value="Teacher">Teacher</option>
+                  <option value="Student">Student</option>
+                  <option value="Employee">Employee</option>
+                </select>
               )}
             </div>
 

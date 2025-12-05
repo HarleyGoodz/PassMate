@@ -13,12 +13,11 @@ export default function EventDetails() {
   const [userHasTicket, setUserHasTicket] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ticket details
-  const [tickets, setTickets] = useState([]); // all tickets for this event
-  const [regularInfo, setRegularInfo] = useState({ count: 0, available: 0, price: null });
-  const [vipInfo, setVipInfo] = useState({ count: 0, available: 0, price: null });
+  const [tickets, setTickets] = useState([]);
+  const [regularInfo, setRegularInfo] = useState({ count: 0, available: 0, price: null, id: null });
+  const [vipInfo, setVipInfo] = useState({ count: 0, available: 0, price: null, id: null });
 
-  // 1) Load session user
+  // Load session user
   useEffect(() => {
     let mounted = true;
     fetch("http://localhost:8080/api/user/me", { credentials: "include" })
@@ -37,7 +36,7 @@ export default function EventDetails() {
     };
   }, []);
 
-  // 2) Load event details
+  // Load event details
   useEffect(() => {
     let mounted = true;
     async function loadEvent() {
@@ -66,12 +65,10 @@ export default function EventDetails() {
 
         setEvent(mapped);
 
-        // determine soldOut using server-provided ticketsSold if available, otherwise we'll use tickets fetch below
         if ((data.ticketsSold ?? data.tickets_sold) != null) {
           const sold = (data.ticketsSold ?? data.tickets_sold) >= (data.ticketLimit ?? data.ticket_limit ?? Infinity);
           setSoldOut(Boolean(sold));
         } else {
-          // leave soldOut false for now until tickets load
           setSoldOut(false);
         }
       } catch (err) {
@@ -87,15 +84,13 @@ export default function EventDetails() {
     };
   }, [id, navigate]);
 
-  // 2.5) Load tickets for this event and compute regular/vip info
+  // Load tickets for this event (Regular & VIP)
   useEffect(() => {
     if (!event) return;
     let mounted = true;
 
     async function loadTickets() {
       try {
-        // your backend doesn't appear to provide a direct /api/ticket/byEvent endpoint,
-        // so fetch all and filter here (you have this pattern elsewhere)
         const res = await fetch("http://localhost:8080/api/ticket/all");
         if (!res.ok) {
           console.warn("Failed to load tickets", res.status);
@@ -106,12 +101,10 @@ export default function EventDetails() {
 
         const arr = Array.isArray(data) ? data : [];
 
-        // filter tickets for this event - account for different server shapes
         const forEvent = arr.filter((t) => {
           try {
             if (!t) return false;
             if (t.event && (t.event.eventId === event.id || t.event.id === event.id)) return true;
-            // maybe server sends eventId directly on ticket
             if (t.eventId === event.id || t.event_id === event.id) return true;
             return false;
           } catch (e) {
@@ -127,17 +120,29 @@ export default function EventDetails() {
         const regularAvailable = regular.filter((t) => t.availability !== false).length;
         const vipAvailable = vip.filter((t) => t.availability !== false).length;
 
-        // choose the price to show — prefer the first ticket's price if present
         const regularPrice = regular.length > 0 ? (regular[0].ticketPrice ?? regular[0].ticket_price ?? null) : null;
         const vipPrice = vip.length > 0 ? (vip[0].ticketPrice ?? vip[0].ticket_price ?? null) : null;
 
-        setRegularInfo({ count: regular.length, available: regularAvailable, price: regularPrice });
-        setVipInfo({ count: vip.length, available: vipAvailable, price: vipPrice });
+        // 🔥 ADD TICKET ID
+        const regularId = regular.length > 0 ? regular[0].ticketId : null;
+        const vipId = vip.length > 0 ? vip[0].ticketId : null;
 
-        // if server didn't give ticketsSold earlier, compute sold out here using available counts and ticket_limit
+        setRegularInfo({
+          count: regular.length,
+          available: regularAvailable,
+          price: regularPrice,
+          id: regularId
+        });
+
+        setVipInfo({
+          count: vip.length,
+          available: vipAvailable,
+          price: vipPrice,
+          id: vipId
+        });
+
         if (event.ticket_limit && Number.isFinite(Number(event.ticket_limit))) {
           const totalAvailable = regularAvailable + vipAvailable;
-          // if totalAvailable is 0 then sold out
           setSoldOut(totalAvailable <= 0);
         }
       } catch (err) {
@@ -152,7 +157,7 @@ export default function EventDetails() {
     };
   }, [event]);
 
-  // 3) Check if user owns a ticket for this event (calls backend if user present)
+  // Check if user owns a ticket
   useEffect(() => {
     if (!user || !event) return;
     let mounted = true;
@@ -214,8 +219,10 @@ export default function EventDetails() {
 
           <div className="description-box">{event.event_description}</div>
 
-          {/* NEW: Ticket breakdown */}
+          {/* Ticket Breakdown */}
           <div style={{ marginTop: 18, display: "flex", gap: 12, alignItems: "stretch", flexWrap: "wrap" }}>
+            
+            {/* REGULAR */}
             <div style={{
               flex: "1 1 220px",
               background: "#fff",
@@ -224,21 +231,33 @@ export default function EventDetails() {
               boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
             }}>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>Regular</div>
-              <div style={{ marginBottom: 6 }}><strong>Price:</strong> {regularInfo.price != null ? formatPrice(regularInfo.price) : "Not set"}</div>
-              <div style={{ marginBottom: 8 }}><strong>Available:</strong> {regularInfo.available} / {regularInfo.count}</div>
+              <div style={{ marginBottom: 6 }}>
+                <strong>Price:</strong> {regularInfo.price != null ? formatPrice(regularInfo.price) : "Not set"}
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Available:</strong> {regularInfo.available} / {regularInfo.count}
+              </div>
+
               <div>
-                {(!user) ? (
+                {!user ? (
                   <Link to="/login" className="buy-btn">Login to Buy</Link>
                 ) : soldOut || regularInfo.available <= 0 ? (
                   <button className="buy-btn disabled">SOLD OUT</button>
                 ) : userHasTicket ? (
                   <button className="buy-btn disabled">Ticket Owned</button>
                 ) : (
-                  <Link to={`/event/${event.id}/buy?type=Regular`} className="buy-btn">Buy Regular</Link>
+                  // 🔥 PASS userId & ticketId
+                  <Link 
+                    to={`/event/${event.id}/buy?type=Regular&userId=${user.userId}&ticketId=${regularInfo.id}`} 
+                    className="buy-btn"
+                  >
+                    Buy Regular
+                  </Link>
                 )}
               </div>
             </div>
 
+            {/* VIP */}
             <div style={{
               flex: "1 1 220px",
               background: "#fff",
@@ -247,20 +266,32 @@ export default function EventDetails() {
               boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
             }}>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>VIP</div>
-              <div style={{ marginBottom: 6 }}><strong>Price:</strong> {vipInfo.price != null ? formatPrice(vipInfo.price) : "Not set"}</div>
-              <div style={{ marginBottom: 8 }}><strong>Available:</strong> {vipInfo.available} / {vipInfo.count}</div>
+              <div style={{ marginBottom: 6 }}>
+                <strong>Price:</strong> {vipInfo.price != null ? formatPrice(vipInfo.price) : "Not set"}
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Available:</strong> {vipInfo.available} / {vipInfo.count}
+              </div>
+
               <div>
-                {(!user) ? (
+                {!user ? (
                   <Link to="/login" className="buy-btn">Login to Buy</Link>
                 ) : soldOut || vipInfo.available <= 0 ? (
                   <button className="buy-btn disabled">SOLD OUT</button>
                 ) : userHasTicket ? (
                   <button className="buy-btn disabled">Ticket Owned</button>
                 ) : (
-                  <Link to={`/event/${event.id}/buy?type=VIP`} className="buy-btn">Buy VIP</Link>
+                  // 🔥 PASS userId & ticketId
+                  <Link 
+                    to={`/event/${event.id}/buy?type=VIP&userId=${user.userId}&ticketId=${vipInfo.id}`} 
+                    className="buy-btn"
+                  >
+                    Buy VIP
+                  </Link>
                 )}
               </div>
             </div>
+
           </div>
         </div>
 

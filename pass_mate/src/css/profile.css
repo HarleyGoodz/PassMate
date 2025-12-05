@@ -47,6 +47,14 @@
   z-index: 10;
 }
 
+.profile-select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
 .eventlist-back::before {
   content: '';
   position: absolute;
