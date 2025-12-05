@@ -11,13 +11,25 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
   const getParam = (key, fallback = "") =>
     fromState[key] ?? (qp.has(key) ? qp.get(key) : fallback);
 
-  const rawPrice = getParam("price", "0");
-  const rawBalance = getParam("balance", "0");
-  const rawTxSuccess = getParam("transaction_success", getParam("transactionSuccess", "true"));
-  const transaction_success = String(rawTxSuccess).toLowerCase() === "true";
+  // GET PARAMS
+  let userId = getParam("userId", "");
+  let ticketId = getParam("ticketId", "");
+
+  // 🔥 FIX #1: handle numeric values from location.state
+  if (!userId && fromState.userId) userId = fromState.userId;
+  if (!ticketId && fromState.ticketId) ticketId = fromState.ticketId;
+
+  // 🔥 FIX #2: handle nested state structures (most common React cause)
+  if (!userId && fromState.user && fromState.user.userId) userId = fromState.user.userId;
+  if (!ticketId && fromState.ticket && fromState.ticket.ticketId) ticketId = fromState.ticket.ticketId;
 
   const user = fromState.user ?? { email: qp.get("email") ?? "" };
 
+  // REAL VALUES FROM BACKEND
+  const [ticketPrice, setTicketPrice] = useState(null);
+  const [remainingWallet, setRemainingWallet] = useState(null);
+
+  // MESSAGE HANDLING (unchanged)
   const incomingMessages = Array.isArray(fromState.messages) ? fromState.messages : [];
   const initialMessages = propMessages.concat(incomingMessages);
 
@@ -51,11 +63,48 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
     }, exitAnimationMs);
   };
 
+  // FORMATTING CURRENCY
   const fmt = (v) => {
     const n = typeof v === "number" ? v : parseFloat(String(v || "0"));
     if (Number.isNaN(n)) return "₱0.00";
     return `₱${n.toFixed(2)}`;
   };
+
+  // ▶️ CALL BACKEND WHEN PAGE LOADS
+  useEffect(() => {
+    if (!userId || !ticketId) {
+      console.log("❌ Missing userId or ticketId", { userId, ticketId });
+      return;
+    }
+
+    async function purchase() {
+
+      try {
+        const resp = await fetch(
+          `http://localhost:8080/api/payment/purchase?userId=${userId}&ticketId=${ticketId}`,
+          { method: "POST" }
+        );
+
+        const data = await resp.json();
+
+        // 🔥 DEBUG LOG (REQUIRED)
+        console.log("BACKEND RESULT =", data);
+
+        // SET REAL VALUES
+        setTicketPrice(data.ticketPrice);
+        setRemainingWallet(data.remainingWallet);
+      } catch (err) {
+        console.error("Purchase error:", err);
+      }
+    }
+
+    purchase();
+  }, [userId, ticketId]);
+
+  console.log("DEBUG → userId:", userId);
+  console.log("DEBUG → ticketId:", ticketId);
+  console.log("DEBUG → location.state:", fromState);
+  console.log("DEBUG → qp:", Object.fromEntries(qp.entries()));
 
   return (
     <div className="buyticket-page">
@@ -65,32 +114,36 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
         <h1 className="buyticket-title">Ticket Purchase Successful!</h1>
 
         <p className="lead-text">
-          Your simulated payment was successful. Here is your transaction summary:
+          Your payment was successful. Here is your transaction summary:
         </p>
 
         {/* PRICE / BALANCE BOX */}
         <div className="summary-box">
           <div className="row">
             <strong>Ticket Price:</strong>
-            <span>{fmt(rawPrice)}</span>
+            <span>
+              {ticketPrice !== null ? fmt(ticketPrice) : "Loading..."}
+            </span>
           </div>
 
           <div className="row balance">
             <strong>Remaining Wallet Balance:</strong>
-            <span className="green">{fmt(rawBalance)}</span>
+            <span className="green">
+              {remainingWallet !== null ? fmt(remainingWallet) : "Loading..."}
+            </span>
           </div>
         </div>
 
         {/* EMAIL SENT INFO */}
         <div className="info-box">
-          Your unique QR code and ticket details have been sent to your email:
+          Your ticket details have been sent to your email:
           <br />
           <strong>{user.email || "N/A"}</strong>
         </div>
 
         {/* NOTE */}
         <div className="note-box">
-          <strong>Note:</strong> Please check your inbox or spam folder for your QR code email.
+          <strong>Note:</strong> Please check your inbox or spam folder for details.
         </div>
 
         {/* BUTTON */}
