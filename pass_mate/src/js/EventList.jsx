@@ -1,23 +1,23 @@
-// src/js/EventList.jsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "../css/eventList.css";
 import Modal from "../Modal";
- 
+
 export default function EventList() {
   const navigate = useNavigate();
   const location = useLocation();
- 
+
   const [localEvents, setLocalEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState(null);
- 
+  const [ticketsByEvent, setTicketsByEvent] = useState({});
+  const [openBreakdownId, setOpenBreakdownId] = useState(null);
+
   const userId = Number(localStorage.getItem("userId") || 0);
- 
-  // group tickets based on eventId -> {regular:[], vip:[]}
+
   const groupTicketsByEvent = (ticketsArr) => {
     const map = {};
     ticketsArr.forEach((t) => {
@@ -36,8 +36,7 @@ export default function EventList() {
     });
     return map;
   };
- 
-  // maps server event to UI shape
+
   const mapServerEvent = (srv) => ({
     id: srv.eventId ?? srv.id,
     event_name: srv.eventName ?? srv.event_name,
@@ -58,7 +57,7 @@ export default function EventList() {
     ticket_price_vip: null,
     ticket_price_standard: null,
   });
- 
+
   const formatPrice = (p) => {
     if (p === null || p === undefined) return "Free";
     const n = Number(p);
@@ -66,44 +65,41 @@ export default function EventList() {
     if (n === 0) return "Free";
     return `₱${n.toLocaleString("en-PH")}`;
   };
- 
-  // fetch events + tickets and merge so we can show VIP/Regular prices like EventDetails
+
   const fetchEvents = async () => {
     setLoading(true);
     try {
-      // fetch both in parallel
       const [eventsRes, ticketsRes] = await Promise.all([
         axios.get("http://localhost:8080/api/events/all", { withCredentials: true }),
         axios.get("http://localhost:8080/api/ticket/all", { withCredentials: true }),
       ]);
- 
+
       const eventsData = Array.isArray(eventsRes.data) ? eventsRes.data : [];
       const ticketsData = Array.isArray(ticketsRes.data) ? ticketsRes.data : [];
- 
-      const ticketsByEvent = groupTicketsByEvent(ticketsData);
- 
+
+      const grouped = groupTicketsByEvent(ticketsData);
+      setTicketsByEvent(grouped);
+
       const mapped = eventsData.map((srv) => {
         const base = mapServerEvent(srv);
-        const tb = ticketsByEvent[Number(base.id)];
- 
+        const tb = grouped[Number(base.id)];
+
         if (tb) {
-          // pick first ticket's price for each tier (same as EventDetails)
           const reg = tb.regular[0] ?? tb.raw[0];
           const vip = tb.vip[0];
- 
+
           base.ticket_price_standard = reg
             ? reg.ticketPrice ?? reg.ticket_price ?? reg.price ?? 0
             : 0;
- 
+
           base.ticket_price_vip = vip
             ? vip.ticketPrice ?? vip.ticket_price ?? vip.price ?? 0
             : 0;
         }
- 
+
         return base;
       });
- 
-      // filter events to those created by current user (same logic you used)
+
       const mine = mapped.filter((e) => {
         if (e.serverUser && typeof e.serverUser === "object" && e.serverUser.userId) {
           return Number(e.serverUser.userId) === userId;
@@ -117,7 +113,7 @@ export default function EventList() {
         }
         return false;
       });
- 
+
       setLocalEvents(mine);
       setError(null);
     } catch (err) {
@@ -127,78 +123,55 @@ export default function EventList() {
       setLoading(false);
     }
   };
- 
+
   useEffect(() => {
     fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
- 
+
   const handleEdit = (event) => {
     navigate(`/edit-event/${event.id}`, { state: { event } });
   };
- 
+
   const confirmDelete = (event) => {
     setDeleteTarget(event);
     setShowDeleteModal(true);
   };
- 
-  // Helper: get ticket id from ticket object - adapt if your ticket id field differs
+
   const ticketGetId = (ticket) => ticket.ticketId ?? ticket.id ?? ticket.ticket_id ?? ticket._id;
- 
-  // FRONTEND-only delete flow:
-  // 1) fetch tickets (from /api/ticket/all), filter those for the event
-  // 2) delete each ticket by calling the ticket delete endpoint
-  // 3) once all ticket deletes succeed, call event delete endpoint
-  //
-  // IMPORTANT: this assumes you have `DELETE /api/ticket/delete/{id}` on the backend.
-  // If your endpoint path or parameter name is different, change the `axios.delete` URL below.
+
   const deleteEvent = async () => {
     if (!deleteTarget) return;
     try {
-      // 1) fetch all tickets
       const ticketsRes = await axios.get("http://localhost:8080/api/ticket/all", { withCredentials: true });
       const ticketsData = Array.isArray(ticketsRes.data) ? ticketsRes.data : [];
- 
-      // 2) filter tickets that belong to this event
+
       const ticketsForEvent = ticketsData.filter((t) => {
         const eid = t.event?.eventId ?? t.event?.id ?? t.eventId ?? t.event_id;
         return Number(eid) === Number(deleteTarget.id);
       });
- 
-      // 3) delete tickets (if any)
+
       if (ticketsForEvent.length > 0) {
-        // build array of delete promises
         const deletePromises = ticketsForEvent.map((t) => {
           const tid = ticketGetId(t);
-          if (!tid) {
-            // if ticket has no id we cannot delete it; return a resolved promise to continue
-            return Promise.resolve();
-          }
-          // ======== CHANGE THIS PATH IF YOUR TICKET DELETE ENDPOINT IS DIFFERENT =========
-          // example assumed: DELETE /api/ticket/delete/{id}
+          if (!tid) return Promise.resolve();
           return axios.delete(`http://localhost:8080/api/ticket/delete/${tid}`, { withCredentials: true });
-          // =================================================================================
         });
- 
-        // run all deletes in parallel and wait
         await Promise.all(deletePromises);
       }
- 
-      // 4) finally delete the event
+
       const res = await axios.delete(`http://localhost:8080/api/events/delete/${deleteTarget.id}`, { withCredentials: true });
- 
+
       if (res.status >= 200 && res.status < 300) {
         setLocalEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setShowDeleteModal(false);
         setDeleteTarget(null);
+        setOpenBreakdownId((prev) => (prev === deleteTarget.id ? null : prev));
       } else {
-        // show server response
         const msg = res.data ?? `Delete returned ${res.status}`;
         alert("Failed to delete event: " + JSON.stringify(msg, null, 2));
       }
     } catch (err) {
       console.error("Delete failed:", err);
-      // Friendly extraction of server message
       let msg = "Failed to delete event.";
       if (err.response) {
         if (typeof err.response.data === "string") msg = err.response.data;
@@ -208,53 +181,161 @@ export default function EventList() {
       alert(msg);
     }
   };
- 
+
+  const toggleBreakdown = (eventId) => {
+    setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
+  };
+
+  const renderTicketRow = (t) => {
+    const id = ticketGetId(t) ?? "(no id)";
+    const type = t.ticketType ?? t.type ?? "Unknown";
+    const price = formatPrice(t.ticketPrice ?? t.ticket_price ?? t.price ?? 0);
+    const status = t.status ?? t.available ?? (t.isSold ? "Sold" : "Available");
+    const availability = status === undefined || status === null ? (t.isSold ? "Sold" : "Available") : String(status);
+
+    return (
+      <div key={id} className="ticket-row">
+        <div className="ticket-cell ticket-id">{id}</div>
+        <div className="ticket-cell ticket-type">{type}</div>
+        <div className="ticket-cell ticket-price">{price}</div>
+        <div className={`ticket-cell ticket-availability availability-${String(availability).toLowerCase()}`}>
+          {availability}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="eventlist-page">
       <Link to="/home" className="eventlist-back">Back to home</Link>
       <h1 className="eventlist-title fade-in">Your Events</h1>
- 
+
       <div className="eventlist-wrapper fade-in">
         {loading ? (
-          <p>Loading events…</p>
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Loading events…</p>
+          </div>
         ) : error ? (
-          <p style={{ color: "red" }}>Error: {String(error)}</p>
+          <div className="error-state">
+            <p>⚠ Error: {String(error)}</p>
+          </div>
         ) : localEvents.length === 0 ? (
-          <p className="no-events">No events created yet.</p>
+          <div className="empty-state">
+            <p>No events created yet.</p>
+            <span>Create your first event to get started</span>
+          </div>
         ) : (
-          localEvents.map((event, index) => (
-            <div
-              key={event.id}
-              className="eventlist-card fade-in"
-              style={{ animationDelay: `${0.2 * (index + 1)}s` }}
-            >
-              <h2 className="event-title">{event.event_name}</h2>
- 
-              <div className="event-details-box">
-                <p><strong>Venue:</strong> {event.event_venue}</p>
-                <p><strong>Category:</strong> {event.event_category}</p>
-                <p><strong>Date:</strong> {event.event_date}</p>
-                <p><strong>Time:</strong> {event.event_time_in} – {event.event_time_out}</p>
- 
-                {/* Price Display - Matches EventDetails */}
-                <p>
-                  <strong>Price:</strong>{" "}
-                  Regular {formatPrice(event.ticket_price_standard)} / VIP {formatPrice(event.ticket_price_vip)}
-                </p>
- 
-                <p><strong>Ticket Limit:</strong> {event.ticket_limit}</p>
-                <p><strong>Description:</strong> {event.event_description}</p>
+          localEvents.map((event, index) => {
+            const tb = ticketsByEvent[Number(event.id)] ?? { regular: [], vip: [], raw: [] };
+            const regCount = tb.regular.length;
+            const vipCount = tb.vip.length;
+            const totalCount = tb.raw.length;
+
+            return (
+              <div
+                key={event.id}
+                className="eventlist-card fade-in"
+                style={{ animationDelay: `${0.1 * index}s` }}
+              >
+                <div className="card-header">
+                  <h2 className="event-title">{event.event_name}</h2>
+                  <span className="event-category-badge">{event.event_category}</span>
+                </div>
+
+                <div className="event-details-box">
+                  <div className="detail-row">
+                    <span className="detail-label">📍 Venue</span>
+                    <span className="detail-value">{event.event_venue}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">📅 Date</span>
+                    <span className="detail-value">{event.event_date}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">🕐 Time</span>
+                    <span className="detail-value">{event.event_time_in} – {event.event_time_out}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">💰 Price</span>
+                    <span className="detail-value">
+                      <span className="price-regular">{formatPrice(event.ticket_price_standard)} Regular</span>
+                      <span className="price-vip">{formatPrice(event.ticket_price_vip)} VIP</span>
+                    </span>
+                  </div>
+                  {event.event_description && (
+                    <div className="detail-row description">
+                      <span className="detail-label">📝 About</span>
+                      <span className="detail-value">{event.event_description}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="eventlist-actions">
+                  <button
+                    className="view-breakdown-btn"
+                    onClick={() => toggleBreakdown(event.id)}
+                    aria-expanded={openBreakdownId === event.id}
+                  >
+                    {openBreakdownId === event.id ? "Hide breakdown" : "View breakdown"}
+                    <span className="ticket-count">{totalCount}</span>
+                  </button>
+                </div>
+
+                {openBreakdownId === event.id && (
+                  <div className="breakdown-panel">
+                    <h3>Ticket Breakdown</h3>
+
+                    <div className="breakdown-summary">
+                      <div className="summary-item">
+                        <span className="summary-label">Total</span>
+                        <span className="summary-value">{totalCount}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Regular</span>
+                        <span className="summary-value regular">{regCount}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">VIP</span>
+                        <span className="summary-value vip">{vipCount}</span>
+                      </div>
+                    </div>
+
+                    <div className="breakdown-list">
+                      {tb.raw.length === 0 ? (
+                        <div className="no-tickets">No tickets created for this event.</div>
+                      ) : (
+                        <>
+                          <div className="ticket-header">
+                            <div className="ticket-cell">ID</div>
+                            <div className="ticket-cell">Type</div>
+                            <div className="ticket-cell">Price</div>
+                            <div className="ticket-cell">Status</div>
+                          </div>
+                          {tb.raw.map((t) => renderTicketRow(t))}
+                        </>
+                      )}
+                    </div>
+
+                    <div className="breakdown-actions">
+                      <button className="secondary-btn" onClick={() => handleEdit(event)}>✏ Edit</button>
+                      <button
+                        className="icon-btn danger"
+                        title="Delete event"
+                        onClick={() => confirmDelete(event)}
+                        aria-label="Delete event"
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
- 
-              <div className="eventlist-actions">
-                <button className="edit-btn" onClick={() => handleEdit(event)}>Edit</button>
-                <button className="delete-btn" onClick={() => confirmDelete(event)}>Delete</button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
- 
+
       <Modal
         open={showDeleteModal}
         title="Delete Event"
