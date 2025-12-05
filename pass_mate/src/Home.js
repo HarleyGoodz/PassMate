@@ -194,7 +194,7 @@ export default function Home() {
             {filteredEvents.map((event) => (
               <div key={event.id} className="event-card">
                 <h3>{event.event_name}</h3>
-                <p className="small">{event.event_venue}</p>
+                
                 <Link to={`/event/${event.id}`} className="view-btn">
                   View Details
                 </Link>
