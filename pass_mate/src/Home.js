@@ -20,7 +20,6 @@ export default function Home() {
 
   const SLIDE_INTERVAL = 10000;
 
-  // ✅ 1. Fetch logged-in session user
   useEffect(() => {
     let mounted = true;
 
@@ -46,7 +45,6 @@ export default function Home() {
     };
   }, [navigate]);
 
-  // ✅ LOGOUT
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:8080/api/user/logout", {
@@ -57,7 +55,6 @@ export default function Home() {
     navigate("/login");
   };
 
-  // Background Slideshow
   useEffect(() => {
     const interval = setInterval(() => {
       setPrevBgIndex(bgIndex);
@@ -66,7 +63,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [bgIndex]);
 
-  // ✅ 2. Fetch all events BUT filter out user’s own events
   useEffect(() => {
     let mounted = true;
 
@@ -97,7 +93,6 @@ export default function Home() {
             }))
           : [];
 
-        // ⭐ FILTER OUT events created by the logged-in user
         const notMine = mapped.filter(
           (ev) => ev.serverUserId !== user?.userId
         );
@@ -126,11 +121,6 @@ export default function Home() {
 
   return (
     <div className="home-root">
-      {/* Welcome Message */}
-      {/* <h2 className="welcome-title fade-in">
-        Welcome, <span className="username">{user.fullname}</span> 👋
-      </h2> */}
-
       {/* Top Left Buttons */}
       <div className="ticket-container">
         <Link to="/my-tickets" className="ticket-btn-top fade-hover">
@@ -143,6 +133,11 @@ export default function Home() {
 
         <Link to="/events" className="ticket-btn-top fade-hover">
           Your Events
+        </Link>
+
+        {/* NEW: Profile button */}
+        <Link to="/profile" className="ticket-btn-top fade-hover">
+          👤 Profile
         </Link>
       </div>
 
@@ -194,7 +189,7 @@ export default function Home() {
             {filteredEvents.map((event) => (
               <div key={event.id} className="event-card">
                 <h3>{event.event_name}</h3>
-                
+
                 <Link to={`/event/${event.id}`} className="view-btn">
                   View Details
                 </Link>
