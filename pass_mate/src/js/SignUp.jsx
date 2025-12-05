@@ -10,6 +10,7 @@ export default function SignUp() {
     gmail: "",
     password1: "",
     password2: "",
+    role: "student", // default role added
   });
   const [messages, setMessages] = useState([]);
 
@@ -28,28 +29,45 @@ export default function SignUp() {
     try {
       const resp = await fetch("http://localhost:8080/api/user/add", {
         method: "POST",
-        credentials: "include", // if server auto-logs-in after creation
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           emailAddress: form.gmail,
           fullname: form.username,
           password: form.password1,
-          role: "user",
+          role: form.role, // send selected role to backend
         }),
       });
 
       const text = await resp.text();
       let data;
-      try { data = JSON.parse(text); } catch (_) { data = text; }
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        data = text;
+      }
 
       if (!resp.ok) {
-        setMessages([{ type: "error", text: typeof data === "string" ? data : "Registration failed." }]);
+        setMessages([
+          {
+            type: "error",
+            text: typeof data === "string" ? data : "Registration failed.",
+          },
+        ]);
         return;
       }
 
       if (data && data.userId) {
-        setMessages([{ type: "success", text: "Account created successfully!" }]);
-        setForm({ username: "", gmail: "", password1: "", password2: "" });
+        setMessages([
+          { type: "success", text: "Account created successfully!" },
+        ]);
+        setForm({
+          username: "",
+          gmail: "",
+          password1: "",
+          password2: "",
+          role: "student",
+        });
       } else {
         setMessages([{ type: "error", text: "Registration failed." }]);
       }
@@ -105,6 +123,29 @@ export default function SignUp() {
               onChange={handleChange}
               required
             />
+          </div>
+
+          <div className="input-field-group">
+            <span className="input-icon">🎓</span>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              required
+              style={{
+                flexGrow: 1,
+                padding: "13px 16px",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "white",
+                fontSize: "14px",
+              }}
+            >
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="employee">Employee</option>
+            </select>
           </div>
 
           <div className="input-field-group">

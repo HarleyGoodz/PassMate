@@ -256,6 +256,10 @@ body, html {
     color: #cccccc;
 }
 
+.input-field-group select option {
+    color: black; /* makes the dropdown list readable */
+}
+
 .login-link p {
     margin: 0;
 }
