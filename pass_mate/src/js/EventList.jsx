@@ -4,6 +4,18 @@ import axios from "axios";
 import "../css/eventList.css";
 import Modal from "../Modal";
 
+const formatTo12Hour = (time) => {
+  if (!time) return "";
+
+  let [hour, minute] = time.split(":");
+  hour = Number(hour);
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12; // convert 0 → 12
+
+  return `${hour}:${minute}${ampm}`;
+};
+
 export default function EventList() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -254,7 +266,9 @@ export default function EventList() {
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">🕐 Time</span>
-                    <span className="detail-value">{event.event_time_in} – {event.event_time_out}</span>
+                    <span className="detail-value">
+                    {formatTo12Hour(event.event_time_in)} – {formatTo12Hour(event.event_time_out)}
+                  </span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">💰 Price</span>
