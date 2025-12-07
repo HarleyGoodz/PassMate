@@ -3,6 +3,18 @@ import React, { useState, useEffect } from "react";
 import "../css/eventDetails.css";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 
+const formatTo12Hour = (time) => {
+  if (!time) return "";
+
+  let [hour, minute] = time.split(":");
+  hour = Number(hour);
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12; // convert 0 → 12
+
+  return `${hour}:${minute}${ampm}`;
+};
+
 export default function EventDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -242,7 +254,7 @@ export default function EventDetails() {
 
           <div className="detail-item"><strong>Venue:</strong> {event.event_venue}</div>
           <div className="detail-item"><strong>Date:</strong> {event.event_date}</div>
-          <div className="detail-item"><strong>Time:</strong> {event.event_time_in} – {event.event_time_out}</div>
+          <div className="detail-item"><strong>Time:</strong> {formatTo12Hour(event.event_time_in)} – {formatTo12Hour(event.event_time_out)}</div>
           <div className="detail-item"><strong>Category:</strong> {event.event_category}</div>
           <div className="detail-item"><strong>Ticket Limit:</strong> {event.ticket_limit}</div>
 
