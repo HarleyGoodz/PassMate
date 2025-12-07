@@ -3,9 +3,6 @@ import React, { useState, useEffect } from "react";
 import "../css/eventDetails.css";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 
-// ----------------------------
-// 12-hour time formatter
-// ----------------------------
 const formatTo12Hour = (time) => {
   if (!time) return "";
 
@@ -354,12 +351,7 @@ export default function EventDetails() {
         <div className="details-list">
           <div className="detail-item"><strong>Venue:</strong> {event.event_venue}</div>
           <div className="detail-item"><strong>Date:</strong> {event.event_date}</div>
-
-          {/* ⭐ Updated time format here ⭐ */}
-          <div className="detail-item">
-            <strong>Time:</strong> {formatTo12Hour(event.event_time_in)} – {formatTo12Hour(event.event_time_out)}
-          </div>
-
+          <div className="detail-item"><strong>Time:</strong> {formatTo12Hour(event.event_time_in)} – {formatTo12Hour(event.event_time_out)}</div>
           <div className="detail-item"><strong>Category:</strong> {event.event_category}</div>
           <div className="detail-item"><strong>Ticket Limit:</strong> {event.ticket_limit}</div>
 
