@@ -136,9 +136,9 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
 
         {/* EMAIL SENT INFO */}
         <div className="info-box">
-          Your ticket details have been sent to your email:
+          Your ticket details have been sent to your email!
           <br />
-          <strong>{user.email || "N/A"}</strong>
+          
         </div>
 
         {/* NOTE */}
