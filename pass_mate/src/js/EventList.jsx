@@ -1,8 +1,28 @@
+// src/js/EventList.jsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "../css/eventList.css";
 import Modal from "../Modal";
+
+// ----------------------------
+// 12-hour time formatter
+// ----------------------------
+const formatTo12Hour = (time) => {
+  if (!time) return "";
+
+  const parts = String(time).split(":");
+  if (parts.length < 2) return time;
+
+  let [hour, minute] = parts;
+  hour = Number(hour);
+  if (Number.isNaN(hour)) return time;
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12; // convert 0 -> 12
+
+  return `${hour}:${minute}${ampm}`;
+};
 
 export default function EventList() {
   const navigate = useNavigate();
@@ -126,6 +146,24 @@ export default function EventList() {
 
   useEffect(() => {
     fetchEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Re-fetch when querystring changes (e.g. ?purchased=true) so availability updates
+  useEffect(() => {
+    if (!location || !location.search) return;
+    if (location.search.includes("purchased=true") || location.search.includes("already=true")) {
+      fetchEvents();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  // Also refresh when window gains focus (helpful if user switched tabs)
+  useEffect(() => {
+    const onFocus = () => fetchEvents();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleEdit = (event) => {
@@ -186,12 +224,25 @@ export default function EventList() {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
   };
 
+  // Normalize status/availability rendering; prefer boolean 'availability' if present
   const renderTicketRow = (t) => {
     const id = ticketGetId(t) ?? "(no id)";
     const type = t.ticketType ?? t.type ?? "Unknown";
     const price = formatPrice(t.ticketPrice ?? t.ticket_price ?? t.price ?? 0);
-    const status = t.status ?? t.available ?? (t.isSold ? "Sold" : "Available");
-    const availability = status === undefined || status === null ? (t.isSold ? "Sold" : "Available") : String(status);
+
+    // availability: many shapes exist; prefer explicit boolean 'availability' (true = available)
+    let availability = "Unknown";
+    if (typeof t.availability !== "undefined" && t.availability !== null) {
+      availability = t.availability === false ? "Sold" : "Available";
+    } else if (typeof t.status !== "undefined" && t.status !== null) {
+      availability = String(t.status);
+    } else if (typeof t.available !== "undefined" && t.available !== null) {
+      availability = t.available ? "Available" : "Sold";
+    } else if (typeof t.isSold !== "undefined") {
+      availability = t.isSold ? "Sold" : "Available";
+    } else {
+      availability = "Available";
+    }
 
     return (
       <div key={id} className="ticket-row">
@@ -254,7 +305,9 @@ export default function EventList() {
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">🕐 Time</span>
-                    <span className="detail-value">{event.event_time_in} – {event.event_time_out}</span>
+                    <span className="detail-value">
+                      {formatTo12Hour(event.event_time_in)} – {formatTo12Hour(event.event_time_out)}
+                    </span>
                   </div>
                   <div className="detail-row">
                     <span className="detail-label">💰 Price</span>
