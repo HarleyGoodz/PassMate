@@ -13,6 +13,20 @@
   flex-direction: column;
 }
 
+.btn-delete-only {
+  background-color: #e53935; /* same red as refund delete */
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-delete-only:hover {
+  background-color: #c62828;
+}
+
 .modal-detail-section,
 .modal-details-grid,
 .modal-detail-section p,

@@ -202,6 +202,20 @@ body {
 .headline-subtitle {
   margin-left:10rem; /* or whatever spacing you want */
 }
+.disabled-btn,
+.ended-btn {
+  width: 100%;
+  background-color: #b71c1c;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: not-allowed;
+  opacity: 0.9;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
 
 .hero .search-bar {
     margin-top: 35px;

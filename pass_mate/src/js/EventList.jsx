@@ -5,12 +5,9 @@ import axios from "axios";
 import "../css/eventList.css";
 import Modal from "../Modal";
 
-// ----------------------------
-// 12-hour time formatter
-// ----------------------------
+// 12-hour format
 const formatTo12Hour = (time) => {
   if (!time) return "";
-
   const parts = String(time).split(":");
   if (parts.length < 2) return time;
 
@@ -22,6 +19,23 @@ const formatTo12Hour = (time) => {
   hour = hour % 12 || 12;
 
   return `${hour}:${minute}${ampm}`;
+};
+
+// Helper: Determine Event Status
+const getEventStatus = (event_date, time_in, time_out) => {
+  if (!event_date || !time_in || !time_out) return "AVAILABLE";
+
+  try {
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+    const start = new Date(`${event_date}T${time_in}:00`);
+    const end = new Date(`${event_date}T${time_out}:00`);
+
+    if (now > end) return "FINISHED";
+    if (now >= start && now <= end) return "STARTING";
+    return "AVAILABLE";
+  } catch {
+    return "AVAILABLE";
+  }
 };
 
 export default function EventList() {
@@ -47,10 +61,14 @@ export default function EventList() {
         t.event?.id ??
         t.eventId ??
         t.event_id;
+
       if (eid == null) return;
+
       const key = Number(eid);
       if (!map[key]) map[key] = { regular: [], vip: [], raw: [] };
+
       map[key].raw.push(t);
+
       const type = String(t.ticketType ?? t.type ?? "").toLowerCase();
       if (type.includes("vip")) map[key].vip.push(t);
       else map[key].regular.push(t);
@@ -59,7 +77,7 @@ export default function EventList() {
   };
 
   const mapServerEvent = (srv) => ({
-    id: srv.eventId ?? srv.id,
+    id: Number(srv.eventId),
     event_name: srv.eventName ?? srv.event_name,
     event_venue: srv.eventVenue ?? srv.event_venue,
     event_category: srv.eventCategory ?? srv.event_category,
@@ -125,13 +143,16 @@ export default function EventList() {
         if (e.serverUser && typeof e.serverUser === "object" && e.serverUser.userId) {
           return Number(e.serverUser.userId) === userId;
         }
+
         const full = (localStorage.getItem("userFullname") || "").toLowerCase();
         const email = (localStorage.getItem("userEmail") || "").toLowerCase();
+
         if (typeof e.serverUser === "string") {
-          const s = e.serverUser.toLowerCase();
-          if (full && s.includes(full)) return true;
-          if (email && s.includes(email)) return true;
+          const str = e.serverUser.toLowerCase();
+          if (full && str.includes(full)) return true;
+          if (email && str.includes(email)) return true;
         }
+
         return false;
       });
 
@@ -205,18 +226,10 @@ export default function EventList() {
         setDeleteTarget(null);
         setOpenBreakdownId((prev) => (prev === deleteTarget.id ? null : prev));
       } else {
-        const msg = res.data ?? `Delete returned ${res.status}`;
-        alert("Failed to delete event: " + JSON.stringify(msg, null, 2));
+        alert("Failed to delete event.");
       }
     } catch (err) {
-      console.error("Delete failed:", err);
-      let msg = "Failed to delete event.";
-      if (err.response) {
-        if (typeof err.response.data === "string") msg = err.response.data;
-        else if (err.response.data?.message) msg = err.response.data.message;
-        else msg = JSON.stringify(err.response.data, null, 2);
-      } else msg = err.message;
-      alert(msg);
+      alert("Error deleting event: " + err.message);
     }
   };
 
@@ -224,51 +237,47 @@ export default function EventList() {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
   };
 
-  const renderTicketRow = (t) => {
-    const id = ticketGetId(t) ?? "(no id)";
-    const type = t.ticketType ?? t.type ?? "Unknown";
-    const price = formatPrice(t.ticketPrice ?? t.ticket_price ?? t.price ?? 0);
-
-    let availability = "Unknown";
-    if (typeof t.availability !== "undefined" && t.availability !== null) {
-      availability = t.availability === false ? "Sold" : "Available";
-    } else if (typeof t.status !== "undefined" && t.status !== null) {
-      availability = String(t.status);
-    } else if (typeof t.available !== "undefined" && t.available !== null) {
-      availability = t.available ? "Available" : "Sold";
-    } else if (typeof t.isSold !== "undefined") {
-      availability = t.isSold ? "Sold" : "Available";
-    } else {
-      availability = "Available";
-    }
-
-    return (
-      <div key={id} className="ticket-row">
-        <div className="ticket-cell ticket-id">{id}</div>
-        <div className="ticket-cell ticket-type">{type}</div>
-        <div className="ticket-cell ticket-price">{price}</div>
-        <div
-          className={`ticket-cell ticket-availability availability-${String(
-            availability
-          ).toLowerCase()}`}
-        >
-          {availability}
-        </div>
-      </div>
-    );
-  };
-
   const filteredEvents = localEvents.filter((event) => {
     const txt = `${event.event_name} ${event.event_venue} ${event.event_category}`.toLowerCase();
     return txt.includes(search.toLowerCase());
   });
+
+  // Banner Styles
+  const statusStyles = {
+    FINISHED: {
+      backgroundColor: "#e53935",
+      color: "#fff",
+      padding: "6px 10px",
+      fontWeight: "700",
+      borderRadius: "6px",
+      marginBottom: "10px",
+      textAlign: "center",
+    },
+    STARTING: {
+      backgroundColor: "#fb8c00",
+      color: "#fff",
+      padding: "6px 10px",
+      fontWeight: "700",
+      borderRadius: "6px",
+      marginBottom: "10px",
+      textAlign: "center",
+    },
+    AVAILABLE: {
+      backgroundColor: "#1e88e5",
+      color: "#fff",
+      padding: "6px 10px",
+      fontWeight: "700",
+      borderRadius: "6px",
+      marginBottom: "10px",
+      textAlign: "center",
+    },
+  };
 
   return (
     <div className="eventlist-page">
       <Link to="/home" className="eventlist-back">Back to home</Link>
       <h1 className="eventlist-title fade-in">Your Events</h1>
 
-      {/* 🔎 SEARCH BAR */}
       <div className="search-bar-container fade-in" style={{ marginBottom: "100px" }}>
         <input
           type="text"
@@ -296,6 +305,9 @@ export default function EventList() {
           </div>
         ) : (
           filteredEvents.map((event, index) => {
+            const status = getEventStatus(event.event_date, event.event_time_in, event.event_time_out);
+            const style = statusStyles[status];
+
             const tb = ticketsByEvent[Number(event.id)] ?? { regular: [], vip: [], raw: [] };
             const regCount = tb.regular.length;
             const vipCount = tb.vip.length;
@@ -307,6 +319,14 @@ export default function EventList() {
                 className="eventlist-card fade-in"
                 style={{ animationDelay: `${0.1 * index}s` }}
               >
+                <div style={style}>
+                  {status === "FINISHED"
+                    ? "EVENT FINISHED"
+                    : status === "STARTING"
+                    ? "EVENT IS STARTING"
+                    : "EVENT AVAILABLE"}
+                </div>
+
                 <div className="card-header">
                   <h2 className="event-title">{event.event_name}</h2>
                   <span className="event-category-badge">{event.event_category}</span>
@@ -330,8 +350,12 @@ export default function EventList() {
                   <div className="detail-row">
                     <span className="detail-label">💰 Price</span>
                     <span className="detail-value">
-                      <span className="price-regular">{formatPrice(event.ticket_price_standard)} Regular</span>
-                      <span className="price-vip">{formatPrice(event.ticket_price_vip)} VIP</span>
+                      <span className="price-regular">
+                        {formatPrice(event.ticket_price_standard)} Regular
+                      </span>
+                      <span className="price-vip">
+                        {formatPrice(event.ticket_price_vip)} VIP
+                      </span>
                     </span>
                   </div>
                   {event.event_description && (
@@ -349,10 +373,7 @@ export default function EventList() {
                     aria-expanded={openBreakdownId === event.id}
                   >
                     {openBreakdownId === event.id ? "Hide breakdown" : "View breakdown"}
-                    <span
-                      className="ticket-count"
-                      style={{ pointerEvents: "none" }} // ← FIXED HERE
-                    >
+                    <span className="ticket-count" style={{ pointerEvents: "none" }}>
                       {totalCount}
                     </span>
                   </button>
@@ -388,18 +409,65 @@ export default function EventList() {
                             <div className="ticket-cell">Price</div>
                             <div className="ticket-cell">Status</div>
                           </div>
-                          {tb.raw.map((t) => renderTicketRow(t))}
+                          {tb.raw.map((t) => {
+                            const id = ticketGetId(t) ?? "(no id)";
+                            const type = t.ticketType ?? t.type ?? "Unknown";
+                            const price = formatPrice(t.ticketPrice ?? t.ticket_price ?? t.price ?? 0);
+                            let availability = t.available || t.availability ? "Available" : "Sold";
+
+                            return (
+                              <div key={id} className="ticket-row">
+                                <div className="ticket-cell ticket-id">{id}</div>
+                                <div className="ticket-cell ticket-type">{type}</div>
+                                <div className="ticket-cell ticket-price">{price}</div>
+                                <div className={`ticket-cell availability-${availability.toLowerCase()}`}>
+                                  {availability}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </>
                       )}
                     </div>
 
+                    {/* 🔥 DISABLE EDIT IF EVENT IS STARTING */}
                     <div className="breakdown-actions">
-                      <button className="secondary-btn" onClick={() => handleEdit(event)}>✏ Edit</button>
+                      <button
+                        className="secondary-btn"
+                        onClick={() => {
+                          if (status !== "STARTING") handleEdit(event);
+                        }}
+                        disabled={status === "STARTING"}
+                        title={
+                          status === "STARTING"
+                            ? "Cannot edit while event is happening"
+                            : "Edit Event"
+                        }
+                        style={
+                          status === "STARTING"
+                            ? { opacity: 0.5, cursor: "not-allowed" }
+                            : {}
+                        }
+                      >
+                        ✏ Edit
+                      </button>
+
                       <button
                         className="icon-btn danger"
-                        title="Delete event"
-                        onClick={() => confirmDelete(event)}
-                        aria-label="Delete event"
+                        onClick={() => {
+                          if (status !== "STARTING") confirmDelete(event);
+                        }}
+                        disabled={status === "STARTING"}
+                        title={
+                          status === "STARTING"
+                            ? "Cannot delete an event that is currently happening"
+                            : "Delete event"
+                        }
+                        style={
+                          status === "STARTING"
+                            ? { opacity: 0.5, cursor: "not-allowed" }
+                            : {}
+                        }
                       >
                         🗑
                       </button>
