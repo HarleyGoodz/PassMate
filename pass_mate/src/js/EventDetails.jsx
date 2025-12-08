@@ -265,13 +265,13 @@ export default function EventDetails() {
       return;
     }
 
-    setModal((m) => ({
-      ...m,
+    setModal({
+      show: true,
       loading: true,
       title: "Processing...",
       message: "Please wait...",
       onConfirm: null
-    }));
+    });
 
     try {
       const checkRes = await fetch(
@@ -294,14 +294,17 @@ export default function EventDetails() {
 
       const resp = await fetch(
         `http://localhost:8080/api/payment/purchase?userId=${user.userId}&ticketId=${ticketIdToBuy}`,
-        { method: "POST" }
+        {
+          method: "POST",
+          credentials: "include"
+        }
       );
 
       if (!resp.ok) {
         setModal({
           show: true,
           title: "Purchase Unsuccessful",
-          message: "You already have a ticket for this event.",
+          message: "Purchase failed. Please try again.",
           onConfirm: null
         });
         return;
@@ -309,7 +312,8 @@ export default function EventDetails() {
 
       const body = await resp.json();
 
-      navigate("/buy", {
+      // Navigate to the correct route: /event/:id/buy
+      navigate(`/event/${event.id}/buy`, {
         state: {
           ticketPrice: body.ticketPrice,
           remainingWallet: body.remainingWallet,
@@ -331,6 +335,7 @@ export default function EventDetails() {
       });
     }
   };
+
 
   return (
     <div className="event-page">
