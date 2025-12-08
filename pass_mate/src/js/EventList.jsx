@@ -19,7 +19,7 @@ const formatTo12Hour = (time) => {
   if (Number.isNaN(hour)) return time;
 
   const ampm = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12 || 12; // convert 0 -> 12
+  hour = hour % 12 || 12;
 
   return `${hour}:${minute}${ampm}`;
 };
@@ -35,6 +35,7 @@ export default function EventList() {
   const [error, setError] = useState(null);
   const [ticketsByEvent, setTicketsByEvent] = useState({});
   const [openBreakdownId, setOpenBreakdownId] = useState(null);
+  const [search, setSearch] = useState("");
 
   const userId = Number(localStorage.getItem("userId") || 0);
 
@@ -146,24 +147,19 @@ export default function EventList() {
 
   useEffect(() => {
     fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch when querystring changes (e.g. ?purchased=true) so availability updates
   useEffect(() => {
     if (!location || !location.search) return;
     if (location.search.includes("purchased=true") || location.search.includes("already=true")) {
       fetchEvents();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
-  // Also refresh when window gains focus (helpful if user switched tabs)
   useEffect(() => {
     const onFocus = () => fetchEvents();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleEdit = (event) => {
@@ -175,7 +171,8 @@ export default function EventList() {
     setShowDeleteModal(true);
   };
 
-  const ticketGetId = (ticket) => ticket.ticketId ?? ticket.id ?? ticket.ticket_id ?? ticket._id;
+  const ticketGetId = (ticket) =>
+    ticket.ticketId ?? ticket.id ?? ticket.ticket_id ?? ticket._id;
 
   const deleteEvent = async () => {
     if (!deleteTarget) return;
@@ -197,7 +194,10 @@ export default function EventList() {
         await Promise.all(deletePromises);
       }
 
-      const res = await axios.delete(`http://localhost:8080/api/events/delete/${deleteTarget.id}`, { withCredentials: true });
+      const res = await axios.delete(
+        `http://localhost:8080/api/events/delete/${deleteTarget.id}`,
+        { withCredentials: true }
+      );
 
       if (res.status >= 200 && res.status < 300) {
         setLocalEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
@@ -224,13 +224,11 @@ export default function EventList() {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
   };
 
-  // Normalize status/availability rendering; prefer boolean 'availability' if present
   const renderTicketRow = (t) => {
     const id = ticketGetId(t) ?? "(no id)";
     const type = t.ticketType ?? t.type ?? "Unknown";
     const price = formatPrice(t.ticketPrice ?? t.ticket_price ?? t.price ?? 0);
 
-    // availability: many shapes exist; prefer explicit boolean 'availability' (true = available)
     let availability = "Unknown";
     if (typeof t.availability !== "undefined" && t.availability !== null) {
       availability = t.availability === false ? "Sold" : "Available";
@@ -249,17 +247,37 @@ export default function EventList() {
         <div className="ticket-cell ticket-id">{id}</div>
         <div className="ticket-cell ticket-type">{type}</div>
         <div className="ticket-cell ticket-price">{price}</div>
-        <div className={`ticket-cell ticket-availability availability-${String(availability).toLowerCase()}`}>
+        <div
+          className={`ticket-cell ticket-availability availability-${String(
+            availability
+          ).toLowerCase()}`}
+        >
           {availability}
         </div>
       </div>
     );
   };
 
+  const filteredEvents = localEvents.filter((event) => {
+    const txt = `${event.event_name} ${event.event_venue} ${event.event_category}`.toLowerCase();
+    return txt.includes(search.toLowerCase());
+  });
+
   return (
     <div className="eventlist-page">
       <Link to="/home" className="eventlist-back">Back to home</Link>
       <h1 className="eventlist-title fade-in">Your Events</h1>
+
+      {/* 🔎 SEARCH BAR */}
+      <div className="search-bar-container fade-in" style={{ marginBottom: "100px" }}>
+        <input
+          type="text"
+          className="ticket-search-input"
+          placeholder="Search events by name, venue, or category..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       <div className="eventlist-wrapper fade-in">
         {loading ? (
@@ -271,13 +289,13 @@ export default function EventList() {
           <div className="error-state">
             <p>⚠ Error: {String(error)}</p>
           </div>
-        ) : localEvents.length === 0 ? (
+        ) : filteredEvents.length === 0 ? (
           <div className="empty-state">
-            <p>No events created yet.</p>
-            <span>Create your first event to get started</span>
+            <p>No events match your search.</p>
+            <span>Try adjusting your keywords</span>
           </div>
         ) : (
-          localEvents.map((event, index) => {
+          filteredEvents.map((event, index) => {
             const tb = ticketsByEvent[Number(event.id)] ?? { regular: [], vip: [], raw: [] };
             const regCount = tb.regular.length;
             const vipCount = tb.vip.length;
@@ -331,7 +349,12 @@ export default function EventList() {
                     aria-expanded={openBreakdownId === event.id}
                   >
                     {openBreakdownId === event.id ? "Hide breakdown" : "View breakdown"}
-                    <span className="ticket-count">{totalCount}</span>
+                    <span
+                      className="ticket-count"
+                      style={{ pointerEvents: "none" }} // ← FIXED HERE
+                    >
+                      {totalCount}
+                    </span>
                   </button>
                 </div>
 
