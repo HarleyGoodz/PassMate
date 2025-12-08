@@ -113,27 +113,6 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
 
         <h1 className="buyticket-title">Ticket Purchase Successful!</h1>
 
-        <p className="lead-text">
-          Your payment was successful. Here is your transaction summary:
-        </p>
-
-        {/* PRICE / BALANCE BOX */}
-        <div className="summary-box">
-          <div className="row">
-            <strong>Ticket Price:</strong>
-            <span>
-              {ticketPrice !== null ? fmt(ticketPrice) : "Loading..."}
-            </span>
-          </div>
-
-          <div className="row balance">
-            <strong>Remaining Wallet Balance:</strong>
-            <span className="green">
-              {remainingWallet !== null ? fmt(remainingWallet) : "Loading..."}
-            </span>
-          </div>
-        </div>
-
         {/* EMAIL SENT INFO */}
         <div className="info-box">
           Your ticket details have been sent to your email!
