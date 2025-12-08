@@ -14,6 +14,61 @@
   flex-direction: column;
 }
 
+/* Modal backdrop */
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* Popup box */
+.popup-box {
+  background: #fff;
+  padding: 25px 30px;
+  border-radius: 12px;
+  max-width: 350px;
+  width: 90%;
+  text-align: center;
+  animation: popIn 0.25s ease-out;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+}
+
+.popup-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.popup-message {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.popup-button {
+  background: #ff914d;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.popup-button:hover {
+  background: #ff7c20;
+}
+
+/* Animation */
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 .edit-event-wrapper::before {
   content: '';
   position: fixed;
