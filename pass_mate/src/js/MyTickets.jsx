@@ -3,6 +3,18 @@ import React, { useEffect, useState } from "react";
 import "../css/myTickets_styles.css";
 import { Link } from "react-router-dom";
 
+const formatTo12Hour = (time) => {
+  if (!time) return "";
+
+  let [hour, minute] = time.split(":");
+  hour = Number(hour);
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12; // convert 0 → 12
+
+  return `${hour}:${minute}${ampm}`;
+};
+
 export default function MyTickets() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -323,7 +335,7 @@ export default function MyTickets() {
                         <h3 className="ticket-event">{ev?.event_name ?? "Event"}</h3>
                         <p><strong>Venue:</strong> {ev?.event_venue ?? "—"}</p>
                         <p><strong>Date:</strong> {formatDate(ev?.event_date)}</p>
-                        <p><strong>Time:</strong> {formatTime(ev?.event_time_in, ev?.event_time_out)}</p>
+                        <p><strong>Time:</strong> {`${formatTo12Hour(ev?.event_time_in)} — ${formatTo12Hour(ev?.event_time_out)}`}</p>
                         <p><strong>Price:</strong> ₱{Number(price || 0).toFixed(2)}</p>
                         <p><strong>Type:</strong> {ticketType}</p>
                       </div>
