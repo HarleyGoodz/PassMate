@@ -29,12 +29,18 @@ export default function CreateEvent() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!userId) {
-      alert("You are not logged in!");
-      return;
-    }
+  if (!event.event_description.trim()) {
+    alert("Description is required!");
+    return;
+  }
+
+  if (!userId) {
+    alert("You are not logged in!");
+    return;
+  }
+
 
     const start =
       event.event_date && event.event_time_in
@@ -184,7 +190,13 @@ export default function CreateEvent() {
         {/* DESCRIPTION */}
         <div className="description">
           <label>Description</label>
-          <textarea name="event_description" rows="4" value={event.event_description} onChange={handleChange} />
+          <textarea
+          name="event_description"
+          rows="4"
+          value={event.event_description}
+          onChange={handleChange}
+          required
+            />
         </div>
 
         <div className="action-buttons">
