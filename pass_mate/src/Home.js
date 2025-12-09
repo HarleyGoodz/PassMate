@@ -1,4 +1,4 @@
-// Home.jsx
+// src/js/Home.jsx
 import React, { useState, useEffect } from "react";
 import "./home_style.css";
 import { Link, useNavigate } from "react-router-dom";
@@ -89,22 +89,31 @@ export default function Home() {
         const mapped = Array.isArray(data)
           ? data.map((srv) => ({
               id: srv.eventId ?? srv.id,
-              event_name: srv.eventName,
-              event_venue: srv.eventVenue,
-              event_category: srv.eventCategory,
-              event_date: srv.eventStartTime ? String(srv.eventStartTime).split("T")[0] : "",
+              event_name: srv.eventName ?? srv.event_name ?? "",
+              event_venue: srv.eventVenue ?? srv.event_venue ?? "",
+              event_category: srv.eventCategory ?? srv.event_category ?? "",
+              event_date: srv.eventStartTime ? String(srv.eventStartTime).split("T")[0] : (srv.event_date || ""),
               event_time_in: srv.eventStartTime
                 ? String(srv.eventStartTime).split("T")[1]?.slice(0, 5)
-                : "",
+                : (srv.event_time_in || ""),
               event_time_out: srv.eventEndTime
                 ? String(srv.eventEndTime).split("T")[1]?.slice(0, 5)
-                : "",
-              event_description: srv.eventDescription ?? "",
+                : (srv.event_time_out || ""),
+              event_description: srv.eventDescription ?? srv.event_description ?? "",
               serverUserId: srv.user?.userId ?? null,
+              // IMPORTANT: capture server-side event status (so we can hide CANCELLED)
+              event_status: (srv.eventStatus ?? srv.event_status ?? null),
             }))
           : [];
 
-        const notMine = mapped.filter((ev) => ev.serverUserId !== user?.userId);
+        // Remove events where server flagged status = CANCELLED (case-insensitive)
+        const notCancelled = mapped.filter((ev) => {
+          const s = (ev.event_status ?? "").toString();
+          return s.trim().toUpperCase() !== "CANCELLED";
+        });
+
+        // Keep only events not created by current user
+        const notMine = notCancelled.filter((ev) => ev.serverUserId !== user?.userId);
 
         setEvents(notMine);
       } catch (err) {
@@ -122,7 +131,7 @@ export default function Home() {
   // ⭐ FILTER BY NAME (search)
   let filteredEvents = query
     ? events.filter((e) =>
-        e.event_name.toLowerCase().includes(query.toLowerCase())
+        (e.event_name || "").toLowerCase().includes(query.toLowerCase())
       )
     : events;
 
