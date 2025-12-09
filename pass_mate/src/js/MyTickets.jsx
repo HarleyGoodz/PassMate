@@ -3,6 +3,21 @@ import React, { useEffect, useState } from "react";
 import "../css/myTickets_styles.css";
 import { Link } from "react-router-dom";
 
+/* Helper to format 12-hour times */
+const formatTo12Hour = (time) => {
+  if (!time) return "";
+  const parts = String(time).split(":");
+  if (parts.length < 2) return time;
+
+  let [hour, minute] = parts;
+  hour = Number(hour);
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+
+  return `${hour}:${minute}${ampm}`;
+};
+
 export default function MyTickets() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -34,7 +49,7 @@ export default function MyTickets() {
     }
   }
 
-  // Helper: fetch all payments and filter by user
+  // Fetch payments belonging to current user
   async function fetchMyPayments(currentUser) {
     try {
       const res = await fetch("http://localhost:8080/api/payment/get-all", { credentials: "include" });
@@ -44,11 +59,12 @@ export default function MyTickets() {
       const payments = await res.json();
       const myPayments = payments.filter((p) => {
         try {
-          if (!currentUser) return false;
-          const uid = currentUser.userId ?? currentUser.id ?? currentUser.user_id;
+          const uid = currentUser?.userId ?? currentUser?.id ?? currentUser?.user_id;
           if (!uid) return false;
-          if (p.user && (p.user.userId === uid || p.user.user_id === uid || p.user.id === uid)) return true;
+
+          if (p.user && (p.user.userId === uid || p.user.user_id === uid)) return true;
           if (p.userId === uid || p.user_id === uid) return true;
+
           return false;
         } catch {
           return false;
@@ -121,8 +137,7 @@ export default function MyTickets() {
             event,
             raw: p,
           };
-        })
-      );
+        }
 
       const needsEvent = mapped.filter((m) => m.event == null && m.ticket && m.ticket.id);
       if (needsEvent.length > 0) {
@@ -162,7 +177,19 @@ export default function MyTickets() {
         } catch (err) {
           console.warn("Could not fetch ticket/all fallback", err);
         }
-      }
+
+        return {
+          paymentId,
+          payment_amount: p.payment_amount ?? p.paymentAmount ?? null,
+          payment_method: p.payment_method ?? p.paymentMethod ?? null,
+          payment_status: p.payment_status ?? p.paymentStatus ?? null,
+          payment_timestamp: p.payment_timestamp ?? p.paymentTimestamp ?? null,
+          reference_code: p.reference_code ?? p.referenceCode ?? null,
+          ticket: ticketObj,
+          event,
+          raw: p,
+        };
+      });
 
       return mapped;
     } catch (err) {
@@ -188,6 +215,7 @@ export default function MyTickets() {
 
         const mapped = await fetchMyPayments(u);
         if (!mounted) return;
+
         setTickets(mapped);
         if (mapped.length === 0) showNotification("You don't own any tickets yet.", "info");
       } catch (err) {
@@ -198,7 +226,7 @@ export default function MyTickets() {
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
+    return () => { mounted = false };
   }, []);
 
   async function handleRequestRefund(paymentId) {
@@ -254,8 +282,7 @@ export default function MyTickets() {
       t?.raw?.ticketType ??
       t?.raw?.type ??
       null;
-    if (!maybe) return "Unknown";
-    return String(maybe);
+    return maybe ? String(maybe) : "Unknown";
   };
 
   const formatDate = (d) => {
@@ -269,11 +296,6 @@ export default function MyTickets() {
     }
   };
 
-  const formatTime = (tIn, tOut) => {
-    if (!tIn && !tOut) return "";
-    return `${tIn || ""}${tIn && tOut ? " – " : ""}${tOut || ""}`;
-  };
-
   const Modal = ({ open, onClose, children, title = "Details" }) => {
     useEffect(() => {
       if (!open) return;
@@ -285,6 +307,7 @@ export default function MyTickets() {
     }, [open]);
 
     if (!open) return null;
+
     return (
       <div
         className="my-modal-backdrop"
@@ -295,11 +318,8 @@ export default function MyTickets() {
         <div className="my-modal-panel" role="dialog" aria-modal="true" aria-label={title}>
           <div className="my-modal-header">
             <h3>{title}</h3>
-            <button onClick={onClose} aria-label="Close details" className="my-modal-close-btn">
-              ✕
-            </button>
+            <button onClick={onClose} className="my-modal-close-btn">✕</button>
           </div>
-
           <div className="my-modal-content">
             {children}
           </div>
@@ -376,13 +396,32 @@ export default function MyTickets() {
           {error && <div style={{ color: "crimson", textAlign: "center", marginTop: 10 }}>{error}</div>}
 
           <div className="tickets-container">
-            {tickets.length > 0 ? (
+            {filteredTickets.length > 0 ? (
               <div className="tickets-grid">
-                {tickets.map((t) => {
-                  const ev = t.event ?? (t.ticket && t.ticket.event) ?? null;
+                {filteredTickets.map((t) => {
+                  const ev = t.event ?? t.ticket?.event ?? null;
                   const price = t.payment_amount ?? t.ticket?.price ?? t.ticket?.ticketPrice ?? 0;
                   const ticketType = deriveTicketType(t);
                   const status = t.payment_status ?? "SUCCESS";
+
+                  const finished = isEventFinished(ev);
+                  const started = !finished && isEventStarted(ev);
+                  const cancelled = !ev || !ev.id;
+                  const modified = !cancelled && !finished && !started && isEventModified(t);
+
+                  let banner = null;
+                  if (finished)
+                    banner = { style: finishedBannerStyle, text: "EVENT FINISHED" };
+                  else if (started)
+                    banner = { style: startedBannerStyle, text: "EVENT STARTED" };
+                  else if (cancelled)
+                    banner = { style: cancelledStyle, text: "EVENT CANCELLED" };
+                  else if (modified)
+                    banner = { style: modifiedStyle, text: "EVENT MODIFIED" };
+                  else
+                    banner = { style: neutralStyle, text: "TICKET AVAILABLE" };
+
+                  const refundAllowed = !finished && !cancelled;
 
                   return (
                     <div key={t.paymentId ?? `${t.ticket?.id ?? "t"}-${Math.random()}`} className="ticket-card-new">
@@ -456,24 +495,28 @@ export default function MyTickets() {
               <h4>🎟️ Ticket Info</h4>
               <p><strong>Ticket ID:</strong> {detailsData.ticket?.id ?? detailsData.ticket?.ticketId ?? "-"}</p>
               <p><strong>Type:</strong> {deriveTicketType(detailsData)}</p>
-              <p><strong>Price:</strong> ₱{Number((detailsData.payment_amount ?? detailsData.ticket?.price ?? 0) || 0).toFixed(2)}</p>
+              <p><strong>Price:</strong> ₱{Number(detailsData.payment_amount ?? detailsData.ticket?.price ?? 0).toFixed(2)}</p>
             </div>
 
             <div className="modal-detail-section payment">
               <h4>💳 Payment Info</h4>
               <p><strong>Payment ID:</strong> {detailsData.paymentId ?? "-"}</p>
-              <p><strong>Method:</strong> {detailsData.payment_method ?? detailsData.paymentMethod ?? "-"}</p>
-              <p><strong>Amount:</strong> ₱{Number(detailsData.payment_amount ?? detailsData.ticket?.price ?? 0).toFixed(2)}</p>
-              <p><strong>Status:</strong> {detailsData.payment_status ?? detailsData.paymentStatus ?? "-"}</p>
-              <p><strong>Reference:</strong> {detailsData.reference_code ?? detailsData.referenceCode ?? "-"}</p>
+              <p><strong>Method:</strong> {detailsData.payment_method ?? "-"}</p>
+              <p><strong>Amount:</strong> ₱{Number(detailsData.payment_amount ?? 0).toFixed(2)}</p>
+              <p><strong>Status:</strong> {detailsData.payment_status ?? "-"}</p>
+              <p><strong>Reference:</strong> {detailsData.reference_code ?? "-"}</p>
             </div>
 
             <div className="modal-detail-section event full">
               <h4>📍 Event Details</h4>
-              <p><strong>Event Name:</strong> {detailsData.event?.event_name ?? detailsData.ticket?.event?.eventName ?? "-"}</p>
-              <p><strong>Venue:</strong> {detailsData.event?.event_venue ?? detailsData.ticket?.event?.eventVenue ?? "-"}</p>
-              <p><strong>Date:</strong> {detailsData.event?.event_date ? String(detailsData.event.event_date).split("T")[0] : (detailsData.ticket?.event?.eventStartTime ? String(detailsData.ticket.event.eventStartTime).split("T")[0] : "-")}</p>
-              <p><strong>Time:</strong> {detailsData.event?.event_time_in ?? (detailsData.ticket?.event?.eventStartTime ? (String(detailsData.ticket.event.eventStartTime).split("T")[1]?.slice(0,5) || "") : "-")}</p>
+              <p><strong>Event Name:</strong> {detailsData.event?.event_name ?? "-"}</p>
+              <p><strong>Venue:</strong> {detailsData.event?.event_venue ?? "-"}</p>
+              <p><strong>Date:</strong> {detailsData.event?.event_date ? String(detailsData.event.event_date).split("T")[0] : "-"}</p>
+              <p>
+                <strong>Time:</strong>{" "}
+                {formatTo12Hour(detailsData.event?.event_time_in)} —
+                {formatTo12Hour(detailsData.event?.event_time_out)}
+              </p>
             </div>
           </div>
         )}

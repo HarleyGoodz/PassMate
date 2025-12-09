@@ -1,19 +1,36 @@
+// BuyTicket.jsx
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import "../css/buyTicket.css";
 
+// Helper: Determine event status
+const getEventStatus = (date, timeIn, timeOut) => {
+  if (!date || !timeIn || !timeOut) return "AVAILABLE";
+
+  try {
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+    const start = new Date(`${date}T${timeIn}:00`);
+    const end = new Date(`${date}T${timeOut}:00`);
+
+    if (now > end) return "FINISHED";
+    if (now >= start && now <= end) return "STARTING";
+  } catch {}
+
+  return "AVAILABLE";
+};
+
 export default function BuyTicket({ qrImage: propQrImage = null, messages: propMessages = [] }) {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const fromState = location.state || {};
   const qp = new URLSearchParams(location.search);
 
-  const getParam = (key, fallback = "") =>
-    fromState[key] ?? (qp.has(key) ? qp.get(key) : fallback);
+  const getParam = (key) => fromState[key] ?? qp.get(key) ?? "";
 
-  // GET PARAMS
-  let userId = getParam("userId", "");
-  let ticketId = getParam("ticketId", "");
+  let userId = getParam("userId");
+  let ticketId = getParam("ticketId");
 
   // handle numeric values from location.state
   if (!userId && fromState.userId) userId = fromState.userId;
@@ -23,9 +40,6 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
   if (!userId && fromState.user && fromState.user.userId) userId = fromState.user.userId;
   if (!ticketId && fromState.ticket && fromState.ticket.ticketId) ticketId = fromState.ticket.ticketId;
 
-  const user = fromState.user ?? { email: qp.get("email") ?? "" };
-
-  // REAL VALUES FROM BACKEND
   const [ticketPrice, setTicketPrice] = useState(null);
   const [remainingWallet, setRemainingWallet] = useState(null);
 
@@ -38,7 +52,6 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
   const initialMessages = propMessages.concat(incomingMessages);
 
   const [visibleMessages, setVisibleMessages] = useState(initialMessages);
-  const [isExiting, setIsExiting] = useState(false);
 
   const displayMs = 2000;
   const exitAnimationMs = 600;
@@ -82,6 +95,7 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
       setError("Missing purchase information. If you were redirected here, try again from the event page.");
       return;
     }
+  }, [status]);
 
     // if we already have results, don't call again
     if (ticketPrice !== null || remainingWallet !== null) return;
@@ -91,6 +105,7 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
       setLoading(true);
       setError(null);
 
+    async function purchase() {
       try {
         const resp = await fetch(
           `http://localhost:8080/api/payment/purchase?userId=${encodeURIComponent(userId)}&ticketId=${encodeURIComponent(ticketId)}`,
@@ -145,8 +160,10 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
 
   return (
     <div className="buyticket-page">
-
       <div className="buyticket-card fade-in">
+        <h1 className="buyticket-title">
+          {status !== "AVAILABLE" ? "Purchase Blocked" : "Ticket Purchase Successful!"}
+        </h1>
 
         <h1 className="buyticket-title">Ticket Purchase Successful!</h1>
 
@@ -189,16 +206,15 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
           {user?.email ? <span>Sent to: <strong>{user.email}</strong></span> : null}
         </div>
 
-        {/* NOTE */}
         <div className="note-box">
-          <strong>Note:</strong> Please check your inbox or spam folder for details.
+          {status === "AVAILABLE"
+            ? "Please check your inbox or spam folder for details."
+            : "Redirecting you back home…"}
         </div>
 
-        {/* BUTTON */}
         <div className="center-btn">
           <Link to="/home" className="home-btn">Back To Home</Link>
         </div>
-
       </div>
     </div>
   );

@@ -31,9 +31,42 @@ export default function CreateEvent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!event.event_description.trim()) {
+      alert("Description is required!");
+      return;
+    }
+
     if (!userId) {
       alert("You are not logged in!");
       return;
+    }
+
+    // ⏰ Prevent creating events in the past (Asia/Manila time)
+    const nowInManila = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })
+    );
+
+    if (!event.event_date || !event.event_time_in) {
+      alert("Please select event date and start time.");
+      return;
+    }
+
+    const eventStartDate = new Date(`${event.event_date}T${event.event_time_in}:00`);
+
+    if (eventStartDate < nowInManila) {
+      alert("You cannot create an event that is scheduled before the current Manila date/time.");
+      return;
+    }
+
+    // ⏰ Validate Start-End Time Logic
+    if (event.event_time_in && event.event_time_out) {
+      const startTimeValue = new Date(`${event.event_date}T${event.event_time_in}:00`);
+      const endTimeValue = new Date(`${event.event_date}T${event.event_time_out}:00`);
+
+      if (endTimeValue <= startTimeValue) {
+        alert("End time must be later than the start time.");
+        return;
+      }
     }
 
     const start =
@@ -46,7 +79,6 @@ export default function CreateEvent() {
         ? `${event.event_date}T${event.event_time_out}:00`
         : null;
 
-    // Extract limits and prices
     const regularLimit = Number(event.regular_limit) || 0;
     const vipLimit = Number(event.vip_limit) || 0;
     const regularPrice = Number(event.regular_price) || null;
@@ -54,9 +86,8 @@ export default function CreateEvent() {
 
     const totalLimit = regularLimit + vipLimit;
 
-    // ✅ Use actual userId from session
     const eventPayload = {
-      userId: userId, 
+      userId: userId,
       eventName: event.event_name,
       eventDescription: event.event_description,
       eventVenue: event.event_venue,
@@ -67,7 +98,6 @@ export default function CreateEvent() {
     };
 
     try {
-      // 1️⃣ Create the event
       const eventRes = await axios.post(
         "http://localhost:8080/api/events/add",
         eventPayload,
@@ -79,7 +109,6 @@ export default function CreateEvent() {
 
       const ticketRequests = [];
 
-      // 2️⃣ Create Regular tickets
       if (regularPrice !== null && regularLimit > 0) {
         for (let i = 0; i < regularLimit; i++) {
           ticketRequests.push(
@@ -93,7 +122,6 @@ export default function CreateEvent() {
         }
       }
 
-      // 3️⃣ Create VIP tickets
       if (vipPrice !== null && vipLimit > 0) {
         for (let i = 0; i < vipLimit; i++) {
           ticketRequests.push(
@@ -107,10 +135,8 @@ export default function CreateEvent() {
         }
       }
 
-      // 4️⃣ Execute all ticket creations
       await Promise.all(ticketRequests);
 
-      // Redirect with event data
       navigate("/events", { state: { createdEvent } });
     } catch (err) {
       console.error(err);
@@ -184,7 +210,13 @@ export default function CreateEvent() {
         {/* DESCRIPTION */}
         <div className="description">
           <label>Description</label>
-          <textarea name="event_description" rows="4" value={event.event_description} onChange={handleChange} />
+          <textarea
+            name="event_description"
+            rows="4"
+            value={event.event_description}
+            onChange={handleChange}
+            required
+          />
         </div>
 
         <div className="action-buttons">

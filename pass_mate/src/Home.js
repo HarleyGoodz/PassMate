@@ -7,6 +7,23 @@ import bg1 from "./assets/event_background3.png";
 import bg2 from "./assets/event_background2.png";
 import bg3 from "./assets/event_background.png";
 
+// Helper: Determine Event Status
+const getEventStatus = (event_date, time_in, time_out) => {
+  if (!event_date || !time_in || !time_out) return "AVAILABLE";
+
+  try {
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+    const start = new Date(`${event_date}T${time_in}:00`);
+    const end = new Date(`${event_date}T${time_out}:00`);
+
+    if (now > end) return "FINISHED";
+    if (now >= start && now <= end) return "STARTING";
+    return "AVAILABLE";
+  } catch {
+    return "AVAILABLE";
+  }
+};
+
 export default function Home() {
   const navigate = useNavigate();
   const backgrounds = [bg1, bg2, bg3];
@@ -15,6 +32,7 @@ export default function Home() {
   const [prevBgIndex, setPrevBgIndex] = useState(0);
   const [events, setEvents] = useState([]);
   const [query, setQuery] = useState("");
+  const [eventFilter, setEventFilter] = useState("ALL"); // ⭐ NEW STATE
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -23,9 +41,7 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
 
-    fetch("http://localhost:8080/api/user/me", {
-      credentials: "include",
-    })
+    fetch("http://localhost:8080/api/user/me", { credentials: "include" })
       .then((res) => {
         if (!res.ok) {
           navigate("/login");
@@ -40,9 +56,7 @@ export default function Home() {
       .catch(() => navigate("/login"))
       .finally(() => mounted && setLoadingUser(false));
 
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [navigate]);
 
   const handleLogout = async () => {
@@ -75,12 +89,10 @@ export default function Home() {
         const mapped = Array.isArray(data)
           ? data.map((srv) => ({
               id: srv.eventId ?? srv.id,
-              event_name: srv.eventName ?? srv.event_name,
-              event_venue: srv.eventVenue ?? srv.event_venue,
-              event_category: srv.eventCategory ?? srv.event_category,
-              event_date: srv.eventStartTime
-                ? String(srv.eventStartTime).split("T")[0]
-                : "",
+              event_name: srv.eventName,
+              event_venue: srv.eventVenue,
+              event_category: srv.eventCategory,
+              event_date: srv.eventStartTime ? String(srv.eventStartTime).split("T")[0] : "",
               event_time_in: srv.eventStartTime
                 ? String(srv.eventStartTime).split("T")[1]?.slice(0, 5)
                 : "",
@@ -88,14 +100,11 @@ export default function Home() {
                 ? String(srv.eventEndTime).split("T")[1]?.slice(0, 5)
                 : "",
               event_description: srv.eventDescription ?? "",
-              ticket_limit: srv.ticketLimit ?? 0,
               serverUserId: srv.user?.userId ?? null,
             }))
           : [];
 
-        const notMine = mapped.filter(
-          (ev) => ev.serverUserId !== user?.userId
-        );
+        const notMine = mapped.filter((ev) => ev.serverUserId !== user?.userId);
 
         setEvents(notMine);
       } catch (err) {
@@ -104,65 +113,60 @@ export default function Home() {
     }
 
     if (user) loadEvents();
-
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [user]);
 
   if (loadingUser) return <div>Loading session...</div>;
   if (!user) return null;
 
-  const filteredEvents = query
+  // ⭐ FILTER BY NAME (search)
+  let filteredEvents = query
     ? events.filter((e) =>
         e.event_name.toLowerCase().includes(query.toLowerCase())
       )
     : events;
 
+  // ⭐ EXTRA FILTERING BY STATUS
+  const applyStatusFilter = (eventList) => {
+    if (eventFilter === "ALL") return eventList;
+
+    return eventList.filter((ev) => {
+      const status = getEventStatus(ev.event_date, ev.event_time_in, ev.event_time_out);
+      if (eventFilter === "FINISHED") return status === "FINISHED";
+      if (eventFilter === "AVAILABLE") return status === "AVAILABLE";
+      if (eventFilter === "STARTING") return status === "STARTING";
+      return true;
+    });
+  };
+
+  filteredEvents = applyStatusFilter(filteredEvents);
+
+  const bannerStyles = {
+    FINISHED: { backgroundColor: "#e53935", color: "#fff" },
+    STARTING: { backgroundColor: "#fb8c00", color: "#fff" },
+    AVAILABLE: { backgroundColor: "#1e88e5", color: "#fff" },
+  };
+
   return (
     <div className="home-root">
-      {/* Top Left Buttons */}
       <div className="ticket-container">
-        <Link to="/my-tickets" className="ticket-btn-top fade-hover">
-          🎟️ My Tickets
-        </Link>
-
-        <Link to="/create-event" className="ticket-btn-top fade-hover">
-          Create Event
-        </Link>
-
-        <Link to="/events" className="ticket-btn-top fade-hover">
-          Your Events
-        </Link>
-
-        {/* NEW: Profile button */}
-        <Link to="/profile" className="ticket-btn-top fade-hover">
-          👤 Profile
-        </Link>
+        <Link to="/my-tickets" className="ticket-btn-top fade-hover">🎟️ My Tickets</Link>
+        <Link to="/create-event" className="ticket-btn-top fade-hover">Create Event</Link>
+        <Link to="/events" className="ticket-btn-top fade-hover">Your Events</Link>
+        <Link to="/profile" className="ticket-btn-top fade-hover">👤 Profile</Link>
       </div>
 
-      {/* Logout Button */}
       <div className="top-right-buttons">
-        <button onClick={handleLogout} className="logout-btn fade-hover">
-          Logout
-        </button>
+        <button onClick={handleLogout} className="logout-btn fade-hover">Logout</button>
       </div>
 
-      {/* Hero Section */}
+      {/* HERO SECTION */}
       <div className="hero">
-        <div
-          className="hero-bg hero-bg-base"
-          style={{ backgroundImage: `url(${backgrounds[prevBgIndex]})` }}
-        />
-        <div
-          key={bgIndex}
-          className="hero-bg hero-bg-slide"
-          style={{ backgroundImage: `url(${backgrounds[bgIndex]})` }}
-        />
+        <div className="hero-bg hero-bg-base" style={{ backgroundImage: `url(${backgrounds[prevBgIndex]})` }} />
+        <div key={bgIndex} className="hero-bg hero-bg-slide" style={{ backgroundImage: `url(${backgrounds[bgIndex]})` }} />
 
         <h1>
-          Skip the Line.
-          <br />
+          Skip the Line.<br />
           <span className="headline-subtitle">Join the Fun.</span>
         </h1>
 
@@ -174,30 +178,88 @@ export default function Home() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-
-        <p className="fade-in delay-2">
-          Find concerts, entertainment, and more — all from your dashboard.
-        </p>
       </div>
 
-      {/* Events List */}
+      {/* EVENTS LIST */}
       <div className="events-section fade-in">
-        <h2>Available Events</h2>
+        <h2>Published Events</h2>
+
+        {/* ⭐ FILTER BUTTONS SECTION */}
+        <div className="filter-buttons" style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
+          <button
+            className={`filter-btn ${eventFilter === "ALL" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("ALL")}
+          >
+            All Events
+          </button>
+
+          <button
+            className={`filter-btn ${eventFilter === "FINISHED" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("FINISHED")}
+          >
+            Finished Events
+          </button>
+
+          <button
+            className={`filter-btn ${eventFilter === "AVAILABLE" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("AVAILABLE")}
+          >
+            Available Events
+          </button>
+
+          <button
+            className={`filter-btn ${eventFilter === "STARTING" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("STARTING")}
+          >
+            Started Events
+          </button>
+        </div>
 
         {filteredEvents.length > 0 ? (
           <div className="event-grid">
-            {filteredEvents.map((event) => (
-              <div key={event.id} className="event-card">
-                <h3>{event.event_name}</h3>
+            {filteredEvents.map((event) => {
+              const status = getEventStatus(
+                event.event_date,
+                event.event_time_in,
+                event.event_time_out
+              );
 
-                <Link to={`/event/${event.id}`} className="view-btn">
-                  View Details
-                </Link>
-              </div>
-            ))}
+              return (
+                <div key={event.id} className="event-card">
+                  <div
+                    style={{
+                      ...bannerStyles[status],
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontWeight: "700",
+                      marginBottom: "8px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {status === "FINISHED"
+                      ? "EVENT FINISHED"
+                      : status === "STARTING"
+                      ? "EVENT IS STARTING"
+                      : "EVENT AVAILABLE"}
+                  </div>
+
+                  <h3>{event.event_name}</h3>
+
+                  {status !== "AVAILABLE" ? (
+                    <button className="disabled-btn ended-btn" disabled>
+                      {status === "STARTING" ? "Event Started – Cannot Buy" : "Event Ended – Cannot Buy"}
+                    </button>
+                  ) : (
+                    <Link to={`/event/${event.id}`} className="view-btn">
+                      View Details
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
-          <p>No available events yet.</p>
+          <p>No events found.</p>
         )}
       </div>
     </div>
