@@ -32,6 +32,7 @@ export default function Home() {
   const [prevBgIndex, setPrevBgIndex] = useState(0);
   const [events, setEvents] = useState([]);
   const [query, setQuery] = useState("");
+  const [eventFilter, setEventFilter] = useState("ALL"); // ⭐ NEW STATE
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -118,11 +119,27 @@ export default function Home() {
   if (loadingUser) return <div>Loading session...</div>;
   if (!user) return null;
 
-  const filteredEvents = query
+  // ⭐ FILTER BY NAME (search)
+  let filteredEvents = query
     ? events.filter((e) =>
         e.event_name.toLowerCase().includes(query.toLowerCase())
       )
     : events;
+
+  // ⭐ EXTRA FILTERING BY STATUS
+  const applyStatusFilter = (eventList) => {
+    if (eventFilter === "ALL") return eventList;
+
+    return eventList.filter((ev) => {
+      const status = getEventStatus(ev.event_date, ev.event_time_in, ev.event_time_out);
+      if (eventFilter === "FINISHED") return status === "FINISHED";
+      if (eventFilter === "AVAILABLE") return status === "AVAILABLE";
+      if (eventFilter === "STARTING") return status === "STARTING";
+      return true;
+    });
+  };
+
+  filteredEvents = applyStatusFilter(filteredEvents);
 
   const bannerStyles = {
     FINISHED: { backgroundColor: "#e53935", color: "#fff" },
@@ -165,7 +182,38 @@ export default function Home() {
 
       {/* EVENTS LIST */}
       <div className="events-section fade-in">
-        <h2>Available Events</h2>
+        <h2>Published Events</h2>
+
+        {/* ⭐ FILTER BUTTONS SECTION */}
+        <div className="filter-buttons" style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
+          <button
+            className={`filter-btn ${eventFilter === "ALL" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("ALL")}
+          >
+            All Events
+          </button>
+
+          <button
+            className={`filter-btn ${eventFilter === "FINISHED" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("FINISHED")}
+          >
+            Finished Events
+          </button>
+
+          <button
+            className={`filter-btn ${eventFilter === "AVAILABLE" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("AVAILABLE")}
+          >
+            Available Events
+          </button>
+
+          <button
+            className={`filter-btn ${eventFilter === "STARTING" ? "active-filter" : ""}`}
+            onClick={() => setEventFilter("STARTING")}
+          >
+            Started Events
+          </button>
+        </div>
 
         {filteredEvents.length > 0 ? (
           <div className="event-grid">
@@ -197,7 +245,6 @@ export default function Home() {
 
                   <h3>{event.event_name}</h3>
 
-                  {/* NEW RULE — Disable buy when starting or finished */}
                   {status !== "AVAILABLE" ? (
                     <button className="disabled-btn ended-btn" disabled>
                       {status === "STARTING" ? "Event Started – Cannot Buy" : "Event Ended – Cannot Buy"}
@@ -212,7 +259,7 @@ export default function Home() {
             })}
           </div>
         ) : (
-          <p>No available events yet.</p>
+          <p>No events found.</p>
         )}
       </div>
     </div>
