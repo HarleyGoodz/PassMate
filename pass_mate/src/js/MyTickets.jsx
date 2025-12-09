@@ -22,14 +22,22 @@ export default function MyTickets() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState("");
-  const [ticketFilter, setTicketFilter] = useState("ALL"); // ⭐ FILTER STATE ADDED
+
+  // Custom popup notification state
+  const [notification, setNotification] = useState(null);
+
+  // Modal state for showing a single ticket's details
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsData, setDetailsData] = useState(null);
 
-  // Fetch current logged-in user
+  // Show notification helper
+  const showNotification = (message, type = "info") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Helper: read user session
   async function fetchUser() {
     try {
       const res = await fetch("http://localhost:8080/api/user/me", { credentials: "include" });
@@ -44,11 +52,11 @@ export default function MyTickets() {
   // Fetch payments belonging to current user
   async function fetchMyPayments(currentUser) {
     try {
-      const res = await fetch("http://localhost:8080/api/payment/get-all");
-      if (!res.ok) throw new Error(`Failed to load payments (${res.status})`);
-
+      const res = await fetch("http://localhost:8080/api/payment/get-all", { credentials: "include" });
+      if (!res.ok) {
+        throw new Error(`Failed to load payments (${res.status})`);
+      }
       const payments = await res.json();
-
       const myPayments = payments.filter((p) => {
         try {
           const uid = currentUser?.userId ?? currentUser?.id ?? currentUser?.user_id;
@@ -63,34 +71,111 @@ export default function MyTickets() {
         }
       });
 
-      const mapped = myPayments.map((p) => {
-        const paymentId = p.id ?? p.paymentId ?? p.payment_id ?? null;
-        const ticket = p.ticket ?? p.tickets ?? null;
+      const mapped = await Promise.all(
+        myPayments.map(async (p) => {
+          const paymentId = p.id ?? p.paymentId ?? p.payment_id ?? null;
+          const ticket = p.ticket ?? p.tickets ?? null;
+          let ticketObj = null;
 
-        let ticketObj = null;
-        if (ticket) {
-          ticketObj = {
-            id: ticket.ticketId ?? ticket.id ?? ticket.ticket_id ?? null,
-            price: ticket.ticketPrice ?? ticket.ticket_price ?? ticket.price ?? null,
-            type: ticket.ticketType ?? ticket.ticket_type ?? ticket.type ?? null,
-            availability: ticket.availability ?? ticket.available ?? null,
-            event: ticket.event ?? ticket.eventObj ?? null,
-            rawTicket: ticket,
+          if (ticket) {
+            ticketObj = {
+              id: ticket.ticketId ?? ticket.id ?? ticket.ticket_id ?? null,
+              price: ticket.ticketPrice ?? ticket.ticket_price ?? ticket.price ?? null,
+              type: ticket.ticketType ?? ticket.ticket_type ?? ticket.type ?? null,
+              availability: ticket.availability ?? ticket.available ?? null,
+              event: ticket.event ?? ticket.eventObj ?? null,
+            };
+          } else if (p.ticket_id || p.ticketId) {
+            ticketObj = {
+              id: p.ticketId ?? p.ticket_id ?? p.ticketId,
+              price: null,
+              type: null,
+              availability: null,
+              event: null,
+            };
+          }
+
+          let event = null;
+          if (ticketObj && ticketObj.event) {
+            const ev = ticketObj.event;
+            event = {
+              id: ev.eventId ?? ev.id ?? ev.event_id ?? null,
+              event_name: ev.eventName ?? ev.event_name ?? ev.name ?? "",
+              event_venue: ev.eventVenue ?? ev.event_venue ?? ev.venue ?? "",
+              event_date: ev.eventStartTime ?? ev.event_date ?? ev.date ?? null,
+              event_time_in: ev.eventStartTime
+                ? String(ev.eventStartTime).split("T")[1]?.slice(0, 5)
+                : ev.event_time_in ?? ev.time_in ?? "",
+              event_time_out: ev.eventEndTime
+                ? String(ev.eventEndTime).split("T")[1]?.slice(0, 5)
+                : ev.event_time_out ?? ev.time_out ?? "",
+            };
+          } else if (p.event && (p.event.eventId || p.event.id)) {
+            const ev = p.event;
+            event = {
+              id: ev.eventId ?? ev.id ?? ev.event_id ?? null,
+              event_name: ev.eventName ?? ev.event_name ?? ev.name ?? "",
+              event_venue: ev.eventVenue ?? ev.event_venue ?? ev.venue ?? "",
+              event_date: ev.eventStartTime ?? ev.event_date ?? ev.date ?? null,
+              event_time_in: ev.eventStartTime
+                ? String(ev.eventStartTime).split("T")[1]?.slice(0, 5)
+                : ev.event_time_in ?? ev.time_in ?? "",
+              event_time_out: ev.eventEndTime
+                ? String(ev.eventEndTime).split("T")[1]?.slice(0, 5)
+                : ev.event_time_out ?? ev.time_out ?? "",
+            };
+          }
+
+          return {
+            paymentId,
+            payment_amount: p.payment_amount ?? p.paymentAmount ?? p.paymentAmount ?? null,
+            payment_method: p.payment_method ?? p.paymentMethod ?? null,
+            payment_status: (p.payment_status ?? p.paymentStatus ?? "SUCCESS")?.toUpperCase() ?? "SUCCESS",
+            payment_timestamp: p.payment_timestamp ?? p.paymentTimestamp ?? null,
+            reference_code: p.reference_code ?? p.referenceCode ?? null,
+            ticket: ticketObj,
+            event,
+            raw: p,
           };
         }
 
-        let event = null;
-        const ev = ticketObj?.event ?? p.event ?? null;
-        if (ev) {
-          event = {
-            id: ev.eventId ?? ev.id ?? ev.event_id ?? null,
-            event_name: ev.eventName ?? ev.event_name ?? "",
-            event_venue: ev.eventVenue ?? ev.event_venue ?? "",
-            event_date: ev.eventStartTime ?? ev.event_date ?? null,
-            event_time_in: ev.eventStartTime ? String(ev.eventStartTime).split("T")[1]?.slice(0, 5) : ev.event_time_in ?? "",
-            event_time_out: ev.eventEndTime ? String(ev.eventEndTime).split("T")[1]?.slice(0, 5) : ev.event_time_out ?? "",
-            rawEvent: ev,
-          };
+      const needsEvent = mapped.filter((m) => m.event == null && m.ticket && m.ticket.id);
+      if (needsEvent.length > 0) {
+        try {
+          const tRes = await fetch("http://localhost:8080/api/ticket/all", { credentials: "include" });
+          if (tRes.ok) {
+            const allTickets = await tRes.json();
+            const byId = {};
+            allTickets.forEach((t) => {
+              const tid = t.ticketId ?? t.id ?? t.ticket_id;
+              if (tid) byId[Number(tid)] = t;
+            });
+            const withEvent = mapped.map((m) => {
+              if (!m.event && m.ticket && m.ticket.id && byId[Number(m.ticket.id)]) {
+                const t = byId[Number(m.ticket.id)];
+                const ev = t.event ?? t.eventObj ?? null;
+                if (ev) {
+                  m.event = {
+                    id: ev.eventId ?? ev.id ?? ev.event_id ?? null,
+                    event_name: ev.eventName ?? ev.event_name ?? ev.name ?? "",
+                    event_venue: ev.eventVenue ?? ev.event_venue ?? ev.venue ?? "",
+                    event_date: ev.eventStartTime ?? ev.event_date ?? ev.date ?? null,
+                    event_time_in: ev.eventStartTime
+                      ? String(ev.eventStartTime).split("T")[1]?.slice(0, 5)
+                      : ev.event_time_in ?? "",
+                    event_time_out: ev.eventEndTime
+                      ? String(ev.eventEndTime).split("T")[1]?.slice(0, 5)
+                      : ev.event_time_out ?? "",
+                  };
+                }
+                m.ticket.price = t.ticketPrice ?? t.ticket_price ?? m.ticket.price;
+              }
+              return m;
+            });
+            return withEvent;
+          }
+        } catch (err) {
+          console.warn("Could not fetch ticket/all fallback", err);
         }
 
         return {
@@ -123,7 +208,7 @@ export default function MyTickets() {
 
         if (!u) {
           setTickets([]);
-          setMessages([{ text: "You don't own any tickets yet.", type: "info" }]);
+          showNotification("Please login to see your tickets.", "info");
           setLoading(false);
           return;
         }
@@ -132,13 +217,11 @@ export default function MyTickets() {
         if (!mounted) return;
 
         setTickets(mapped);
-
-        if (mapped.length === 0)
-          setMessages([{ text: "You don't own any tickets yet.", type: "info" }]);
+        if (mapped.length === 0) showNotification("You don't own any tickets yet.", "info");
       } catch (err) {
         console.error("load tickets error", err);
         setError(err.message || "Failed to load tickets");
-        setMessages([{ text: "Failed to load your tickets. Please try again later.", type: "error" }]);
+        showNotification("Failed to load your tickets. Please try again later.", "error");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -146,140 +229,48 @@ export default function MyTickets() {
     return () => { mounted = false };
   }, []);
 
-  const getPaymentId = (t) =>
-    t.paymentId ??
-    t.payment_id ??
-    t.id ??
-    t.raw?.paymentId ??
-    null;
-
-  const isEventFinished = (ev) => {
-    if (!ev || !ev.rawEvent) return false;
+  async function handleRequestRefund(paymentId) {
+    if (!window.confirm("Request a refund for this ticket?")) return;
 
     try {
-      const endRaw = ev.rawEvent.eventEndTime;
-      if (!endRaw) return false;
-
-      const end = new Date(endRaw);
-      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-
-      return end < now;
-    } catch {
-      return false;
-    }
-  };
-
-  const isEventStarted = (ev) => {
-    if (!ev || !ev.rawEvent) return false;
-
-    try {
-      const startRaw = ev.rawEvent.eventStartTime;
-      const endRaw = ev.rawEvent.eventEndTime;
-
-      if (!startRaw || !endRaw) return false;
-
-      const start = new Date(startRaw);
-      const end = new Date(endRaw);
-      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-
-      return now >= start && now < end;
-    } catch {
-      return false;
-    }
-  };
-
-  // ⭐ FILTER LOGIC
-  const applyTicketFilter = (list) => {
-    if (ticketFilter === "ALL") return list;
-
-    return list.filter((t) => {
-      const ev = t.event ?? t.ticket?.event ?? null;
-
-      const finished = isEventFinished(ev);
-      const started = !finished && isEventStarted(ev);
-
-      if (ticketFilter === "FINISHED") return finished;
-      if (ticketFilter === "STARTED") return started;
-      if (ticketFilter === "AVAILABLE") return !finished && !started;
-
-      return true;
-    });
-  };
-
-  const detectEventSnapshotOnPayment = (paymentRaw) => {
-    if (!paymentRaw) return null;
-    const candidates = [
-      paymentRaw.eventSnapshot,
-      paymentRaw.event_snapshot,
-      paymentRaw.purchasedEventSnapshot,
-      paymentRaw.eventAtPurchase,
-      paymentRaw.event_at_purchase,
-      paymentRaw.snapshotEvent,
-      paymentRaw.eventSnapshotJson,
-      paymentRaw.event,
-    ];
-    for (const c of candidates) if (c && typeof c === "object") return c;
-    return null;
-  };
-
-  const isEventModified = (payment) => {
-    const snapshot = detectEventSnapshotOnPayment(payment.raw);
-    if (!snapshot) return false;
-    const nowEv = payment.event?.rawEvent ?? payment.ticket?.rawTicket?.event ?? null;
-    if (!nowEv) return true;
-
-    const fieldsToCompare = [
-      ["eventName", "eventName"],
-      ["eventName", "event_name"],
-      ["eventVenue", "eventVenue"],
-      ["eventVenue", "event_venue"],
-      ["eventDescription", "eventDescription"],
-      ["eventDescription", "event_description"],
-      ["eventStartTime", "eventStartTime"],
-      ["eventStartTime", "event_start_time"],
-      ["eventEndTime", "eventEndTime"],
-      ["eventEndTime", "event_end_time"],
-    ];
-
-    for (const [keyA, keyB] of fieldsToCompare) {
-      const valSnapshot = snapshot[keyA] ?? snapshot[keyB] ?? null;
-      const valNow = nowEv[keyA] ?? nowEv[keyB] ?? null;
-
-      if (String(valSnapshot).trim() !== String(valNow).trim()) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  async function handleDelete(paymentId, { refundAllowed = true } = {}) {
-    if (!paymentId) {
-      alert("Unable to delete this ticket. Missing payment ID.");
-      return;
-    }
-
-    const confirmMsg = refundAllowed
-      ? "Are you sure you want to delete this ticket and request a refund?"
-      : "Are you sure you want to delete this ticket? (No refund will be issued)";
-
-    if (!window.confirm(confirmMsg)) return;
-
-    try {
-      const resp = await fetch(`http://localhost:8080/api/payment/delete/${paymentId}`, {
-        method: "DELETE",
+      const resp = await fetch(`http://localhost:8080/api/payment/refund/${paymentId}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" }
       });
 
       if (!resp.ok) {
-        const txt = await resp.text().catch(() => "");
-        setMessages([{ text: `Failed to delete: ${resp.status} ${txt}`, type: "error" }]);
+        const text = await resp.text().catch(() => "");
+        showNotification(`Failed to request refund: ${resp.status} ${text}`, "error");
         return;
       }
 
-      setTickets((prev) => prev.filter((t) => getPaymentId(t) !== paymentId));
-      setMessages([{ text: refundAllowed ? "Ticket deleted and refunded!" : "Ticket deleted.", type: "success" }]);
-    } catch {
-      setMessages([{ text: "Failed to delete ticket. Try again.", type: "error" }]);
+      const resultText = await resp.text().catch(() => "Refund processed");
+
+      setTickets(prev =>
+        prev.map(t => {
+          const id = t.paymentId ?? t.paymentId ?? null;
+          if (id == paymentId) {
+            return { ...t, payment_status: "REFUNDED" };
+          }
+          return t;
+        })
+      );
+
+      try {
+        const userRes = await fetch("http://localhost:8080/api/user/me", { credentials: "include" });
+        if (userRes.ok) {
+          const u = await userRes.json();
+          setUser(u);
+        }
+      } catch (e) {
+        console.warn("Failed to refresh user after refund", e);
+      }
+
+      showNotification(resultText || "Refund processed and credited to your wallet.", "success");
+    } catch (err) {
+      console.error("refund error", err);
+      showNotification("Failed to request refund. Try again.", "error");
     }
   }
 
@@ -308,17 +299,22 @@ export default function MyTickets() {
   const Modal = ({ open, onClose, children, title = "Details" }) => {
     useEffect(() => {
       if (!open) return;
-      const prev = document.body.style.overflow;
+      const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = prev };
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
     }, [open]);
 
     if (!open) return null;
 
     return (
-      <div className="my-modal-backdrop" onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}>
+      <div
+        className="my-modal-backdrop"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
         <div className="my-modal-panel" role="dialog" aria-modal="true" aria-label={title}>
           <div className="my-modal-header">
             <h3>{title}</h3>
@@ -337,174 +333,67 @@ export default function MyTickets() {
     setDetailsOpen(true);
   };
 
-  // ⭐ APPLY FILTER & SEARCH
-  const filteredTickets = applyTicketFilter(
-    tickets.filter((t) => {
-      const ev = t.event ?? t.ticket?.event ?? {};
-      const ticketType = deriveTicketType(t);
-      const text = `${ev?.event_name ?? ""} ${ev?.event_venue ?? ""} ${ticketType}`.toLowerCase();
-      return text.includes(search.toLowerCase());
-    })
-  );
+  const renderStatusBadge = (status, eventObj) => {
+    const s = (status ?? "").toString().toUpperCase();
+    const evStatus = (eventObj?.event_status ?? eventObj?.eventStatus ?? "").toString().toUpperCase();
+    const isEventCancelled = evStatus === "CANCELLED" || evStatus === "CANCELLED_BY_ORGANIZER";
 
-  // Banner styles kept in JS for convenience
-  const finishedBannerStyle = {
-    backgroundColor: "#e53935",
-    color: "#ffffff",
-    padding: "6px 10px",
-    textAlign: "center",
-    fontWeight: "700",
-    borderRadius: "6px",
-    marginBottom: "10px",
+    if (isEventCancelled) {
+      return <div className="ticket-status cancelled">Event Cancelled</div>;
+    }
+    if (s === "PENDING_REFUND") return <div className="ticket-status pending">Refund Pending</div>;
+    if (s === "REFUNDED") return <div className="ticket-status refunded">Refunded</div>;
+    if (s === "CANCELLED") return <div className="ticket-status cancelled">Cancelled</div>;
+    return null;
   };
 
-  const startedBannerStyle = {
-    backgroundColor: "#fb8c00",
-    color: "#ffffff",
-    padding: "6px 10px",
-    textAlign: "center",
-    fontWeight: "700",
-    borderRadius: "6px",
-    marginBottom: "10px",
-  };
+  // Custom Notification Component
+  const CustomNotification = ({ message, type, onClose }) => {
+    useEffect(() => {
+      const timer = setTimeout(onClose, 4000);
+      return () => clearTimeout(timer);
+    }, [onClose]);
 
-  const cancelledStyle = {
-    backgroundColor: "#b71c1c",
-    color: "#fff",
-    padding: "6px 10px",
-    textAlign: "center",
-    borderRadius: 6,
-    marginBottom: 10,
-    fontWeight: 700,
+    return (
+      <div className={`custom-notification ${type}`}>
+        <div className="notification-icon">
+          {type === "success" && "✓"}
+          {type === "error" && "✕"}
+          {type === "info" && "ℹ"}
+        </div>
+        <div className="notification-message">{message}</div>
+        <button className="notification-close" onClick={onClose}>×</button>
+      </div>
+    );
   };
-
-  const modifiedStyle = {
-    backgroundColor: "#2e7d32",
-    color: "#fff",
-    padding: "6px 10px",
-    textAlign: "center",
-    borderRadius: 6,
-    marginBottom: 10,
-    fontWeight: 700,
-  };
-
-  const neutralStyle = {
-    backgroundColor: "#9e9e9e",
-    color: "#fff",
-    padding: "6px 10px",
-    textAlign: "center",
-    borderRadius: 6,
-    marginBottom: 10,
-    fontWeight: 700,
-  };
-
-  // Determine whether we should display the filters directly above the "You don't own any tickets yet." info message
-  const hasNoTicketsMessage = messages.some((m) =>
-    typeof m.text === "string" && /you don't own any tickets yet/i.test(m.text)
-  );
 
   return (
     <div className="ticket-page">
+      {/* Custom Notification Popup */}
+      {notification && (
+        <CustomNotification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
       <div className="tickets-header">
         <Link to="/home" className="btn-back-home">Back to home</Link>
-        <h1 className="tickets-title">My Tickets</h1>
       </div>
 
-      <div className="search-bar-container">
-        <input
-          type="text"
-          className="ticket-search-input"
-          placeholder="Search by event name, venue, or type..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <h1 className="tickets-title">My Tickets</h1>
 
       {loading ? (
-        <div style={{ padding: 30, textAlign: "center" }}>Loading your tickets…</div>
+        <div className="tickets-container">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading your tickets…</p>
+          </div>
+        </div>
       ) : (
         <>
-          {/* === FILTER BUTTONS: placed just above the No-Tickets message when that message is present */}
-          {hasNoTicketsMessage && (
-            <div className="filter-buttons" style={{ margin: "18px 0" }}>
-              <button
-                className={`filter-btn ${ticketFilter === "ALL" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("ALL")}
-              >
-                All Tickets
-              </button>
-
-              <button
-                className={`filter-btn ${ticketFilter === "FINISHED" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("FINISHED")}
-              >
-                Finished Events
-              </button>
-
-              <button
-                className={`filter-btn ${ticketFilter === "AVAILABLE" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("AVAILABLE")}
-              >
-                Available Tickets
-              </button>
-
-              <button
-                className={`filter-btn ${ticketFilter === "STARTED" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("STARTED")}
-              >
-                Started Events
-              </button>
-            </div>
-          )}
-
-          {messages.length > 0 && (
-            <div className="messages" style={{ maxWidth: 900, margin: "12px auto" }}>
-              {messages.map((msg, idx) => (
-                <div key={idx} className={`alert ${msg.type}`} style={{ marginBottom: 8 }}>
-                  {msg.text}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Also show filters above the tickets grid (for normal flow when the user has tickets) */}
-          {!hasNoTicketsMessage && (
-            <div className="filter-buttons" style={{ margin: "18px 0" }}>
-              <button
-                className={`filter-btn ${ticketFilter === "ALL" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("ALL")}
-              >
-                All Tickets
-              </button>
-
-              <button
-                className={`filter-btn ${ticketFilter === "FINISHED" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("FINISHED")}
-              >
-                Finished Events
-              </button>
-
-              <button
-                className={`filter-btn ${ticketFilter === "AVAILABLE" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("AVAILABLE")}
-              >
-                Available Tickets
-              </button>
-
-              <button
-                className={`filter-btn ${ticketFilter === "STARTED" ? "active-filter" : ""}`}
-                onClick={() => setTicketFilter("STARTED")}
-              >
-                Started Events
-              </button>
-            </div>
-          )}
-
-          {error && (
-            <div style={{ color: "crimson", textAlign: "center", marginTop: 10 }}>
-              {error}
-            </div>
-          )}
+          {error && <div style={{ color: "crimson", textAlign: "center", marginTop: 10 }}>{error}</div>}
 
           <div className="tickets-container">
             {filteredTickets.length > 0 ? (
@@ -513,6 +402,7 @@ export default function MyTickets() {
                   const ev = t.event ?? t.ticket?.event ?? null;
                   const price = t.payment_amount ?? t.ticket?.price ?? t.ticket?.ticketPrice ?? 0;
                   const ticketType = deriveTicketType(t);
+                  const status = t.payment_status ?? "SUCCESS";
 
                   const finished = isEventFinished(ev);
                   const started = !finished && isEventStarted(ev);
@@ -534,64 +424,73 @@ export default function MyTickets() {
                   const refundAllowed = !finished && !cancelled;
 
                   return (
-                    <div key={getPaymentId(t) ?? Math.random()} className="ticket-card-new">
-                      {banner && <div style={banner.style}>{banner.text}</div>}
+                    <div key={t.paymentId ?? `${t.ticket?.id ?? "t"}-${Math.random()}`} className="ticket-card-new">
+                      <div className="ticket-card-header">
+                        <div className="ticket-icon">🎫</div>
+                        {renderStatusBadge(status, ev)}
+                      </div>
 
                       <div className="ticket-info-section">
                         <h3 className="ticket-event">{ev?.event_name ?? "Event"}</h3>
-                        <p><strong>Venue:</strong> {ev?.event_venue ?? "—"}</p>
-                        <p><strong>Date:</strong> {formatDate(ev?.event_date)}</p>
-                        <p><strong>Time:</strong> {`${formatTo12Hour(ev?.event_time_in)} — ${formatTo12Hour(ev?.event_time_out)}`}</p>
-                        <p><strong>Price:</strong> ₱{Number(price || 0).toFixed(2)}</p>
-                        <p><strong>Type:</strong> {ticketType}</p>
+                        
+                        <div className="ticket-detail-row">
+                          <span className="detail-icon">📍</span>
+                          <span className="detail-text">{ev?.event_venue ?? "—"}</span>
+                        </div>
+
+                        <div className="ticket-detail-row">
+                          <span className="detail-icon">📅</span>
+                          <span className="detail-text">{formatDate(ev?.event_date)}</span>
+                        </div>
+
+                        <div className="ticket-detail-row">
+                          <span className="detail-icon">⏰</span>
+                          <span className="detail-text">{formatTime(ev?.event_time_in, ev?.event_time_out)}</span>
+                        </div>
+
+                        <div className="ticket-price-section">
+                          <span className="price-label">Price</span>
+                          <span className="price-amount">₱{Number(price || 0).toFixed(2)}</span>
+                        </div>
+
+                        <div className="ticket-type-badge">{ticketType}</div>
                       </div>
 
                       <div className="ticket-actions">
-                        {refundAllowed ? (
-                          <>
-                            <button
-                              className="btn-delete-refund"
-                              onClick={() => handleDelete(getPaymentId(t), { refundAllowed: true })}
-                            >
-                              Delete & Request Refund
-                            </button>
-                            <button className="btn-show-raw" onClick={() => openDetails(t)}>
-                              View Details
-                            </button>
-                          </>
+                        {status === "PENDING_REFUND" ? (
+                          <button className="btn-disabled" disabled>Refund Requested</button>
+                        ) : status === "REFUNDED" ? (
+                          <button className="btn-disabled" disabled>Refunded</button>
                         ) : (
-                          <>
-                            <button
-                              className="btn-delete-only"
-                              onClick={() => handleDelete(getPaymentId(t), { refundAllowed: false })}
-                            >
-                              Delete (No Refund)
-                            </button>
-                            <button className="btn-show-raw" onClick={() => openDetails(t)}>
-                              View Details
-                            </button>
-                          </>
+                          <button className="btn-refund" onClick={() => handleRequestRefund(t.paymentId)}>
+                            <span className="btn-icon">↺</span> Request Refund
+                          </button>
                         )}
+
+                        <button className="btn-details" onClick={() => openDetails(t)}>
+                          <span className="btn-icon">📋</span> View Details
+                        </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="no-tickets" style={{ padding: 30, textAlign: "center" }}>
-                No tickets match your search.
-              </p>
+              <div className="no-tickets">
+                <div className="no-tickets-icon">🎟️</div>
+                <p>You don't own any tickets yet.</p>
+                <Link to="/home" className="btn-browse">Browse Events</Link>
+              </div>
             )}
           </div>
         </>
       )}
 
-      {/* MODAL */}
       <Modal open={detailsOpen} onClose={() => setDetailsOpen(false)} title="Ticket & Payment Details">
         {!detailsData ? (
           <div style={{ padding: 12, textAlign: "center" }}>Loading details…</div>
         ) : (
-          <div className="modal-details-grid two-row-layout" style={{ textAlign: "left" }}>
+          <div className="modal-details-grid" role="presentation">
             <div className="modal-detail-section ticket">
               <h4>🎟️ Ticket Info</h4>
               <p><strong>Ticket ID:</strong> {detailsData.ticket?.id ?? detailsData.ticket?.ticketId ?? "-"}</p>
