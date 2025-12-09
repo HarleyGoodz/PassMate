@@ -50,7 +50,8 @@ export default function EventList() {
   const [ticketsByEvent, setTicketsByEvent] = useState({});
   const [openBreakdownId, setOpenBreakdownId] = useState(null);
   const [search, setSearch] = useState("");
-  const [eventFilter, setEventFilter] = useState("ALL"); // NEW: filter state
+  // default changed to NON_CANCELLED so CANCELLED events are hidden by default
+  const [eventFilter, setEventFilter] = useState("NON_CANCELLED");
 
   const userId = Number(localStorage.getItem("userId") || 0);
 
@@ -94,6 +95,8 @@ export default function EventList() {
     ticket_limit: srv.ticketLimit ?? srv.ticket_limit ?? 0,
     event_description: srv.eventDescription ?? srv.event_description ?? "",
     serverUser: srv.user ?? srv.createdBy ?? null,
+    // expose raw status coming from backend so we can filter CANCELLED explicitly
+    event_status: (srv.eventStatus ?? srv.event_status ?? "").toString(),
     ticket_price_vip: null,
     ticket_price_standard: null,
   });
@@ -140,6 +143,7 @@ export default function EventList() {
         return base;
       });
 
+      // filter to events that belong to this user
       const mine = mapped.filter((e) => {
         if (e.serverUser && typeof e.serverUser === "object" && e.serverUser.userId) {
           return Number(e.serverUser.userId) === userId;
@@ -233,7 +237,7 @@ export default function EventList() {
         alert("Failed to delete event.");
       }
     } catch (err) {
-      alert("Error deleting event: " + err.message);
+      alert("Error deleting event: " + (err.response?.data || err.message));
     }
   };
 
@@ -241,11 +245,25 @@ export default function EventList() {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
   };
 
-  // New: filter function that uses eventFilter
+  // FIXED: filter function that excludes explicit CANCELLED events
   const applyEventFilter = (events) => {
     if (!eventFilter || eventFilter === "ALL") return events;
 
+    // always allow explicit NON_CANCELLED filter
+    if (eventFilter === "NON_CANCELLED") {
+      return events.filter((e) => (e.event_status ?? "").toString().toUpperCase() !== "CANCELLED");
+    }
+
+    // show only cancelled when user asked for cancelled
+    if (eventFilter === "CANCELLED") {
+      return events.filter((e) => (e.event_status ?? "").toString().toUpperCase() === "CANCELLED");
+    }
+
+    // For time-based filters (AVAILABLE / STARTING / FINISHED) exclude explicit CANCELLED events
     return events.filter((e) => {
+      const explicit = (e.event_status ?? "").toString().toUpperCase();
+      if (explicit === "CANCELLED") return false; // important: don't show cancelled in these buckets
+
       const status = getEventStatus(e.event_date, e.event_time_in, e.event_time_out);
       if (eventFilter === "FINISHED") return status === "FINISHED";
       if (eventFilter === "STARTING") return status === "STARTING";
@@ -283,6 +301,15 @@ export default function EventList() {
     },
     AVAILABLE: {
       backgroundColor: "#1e88e5",
+      color: "#fff",
+      padding: "6px 10px",
+      fontWeight: "700",
+      borderRadius: "6px",
+      marginBottom: "10px",
+      textAlign: "center",
+    },
+    CANCELLED: {
+      backgroundColor: "#9e9e9e",
       color: "#fff",
       padding: "6px 10px",
       fontWeight: "700",
@@ -336,6 +363,14 @@ export default function EventList() {
         >
           Finished
         </button>
+
+        {/* NEW: show cancelled events explicitly */}
+        <button
+          className={`filter-btn ${eventFilter === "CANCELLED" ? "active-filter" : ""}`}
+          onClick={() => setEventFilter("CANCELLED")}
+        >
+          Cancelled
+        </button>
       </div>
 
       <div className="eventlist-wrapper fade-in">
@@ -355,7 +390,9 @@ export default function EventList() {
           </div>
         ) : (
           filteredEvents.map((event, index) => {
-            const status = getEventStatus(event.event_date, event.event_time_in, event.event_time_out);
+            const explicitStatus = (event.event_status ?? "").toString().toUpperCase();
+            const derivedStatus = getEventStatus(event.event_date, event.event_time_in, event.event_time_out);
+            const status = explicitStatus === "CANCELLED" ? "CANCELLED" : derivedStatus;
             const style = statusStyles[status];
 
             const tb = ticketsByEvent[Number(event.id)] ?? { regular: [], vip: [], raw: [] };
@@ -374,6 +411,8 @@ export default function EventList() {
                     ? "EVENT FINISHED"
                     : status === "STARTING"
                     ? "EVENT IS STARTING"
+                    : status === "CANCELLED"
+                    ? "EVENT CANCELLED"
                     : "EVENT AVAILABLE"}
                 </div>
 
@@ -480,21 +519,22 @@ export default function EventList() {
                       )}
                     </div>
 
-                    {/* 🔥 DISABLE EDIT IF EVENT IS STARTING */}
                     <div className="breakdown-actions">
                       <button
                         className="secondary-btn"
                         onClick={() => {
                           if (status !== "STARTING") handleEdit(event);
                         }}
-                        disabled={status === "STARTING"}
+                        disabled={status === "STARTING" || status === "CANCELLED"}
                         title={
                           status === "STARTING"
                             ? "Cannot edit while event is happening"
+                            : status === "CANCELLED"
+                            ? "Cannot edit a cancelled event"
                             : "Edit Event"
                         }
                         style={
-                          status === "STARTING"
+                          status === "STARTING" || status === "CANCELLED"
                             ? { opacity: 0.5, cursor: "not-allowed" }
                             : {}
                         }
@@ -505,16 +545,18 @@ export default function EventList() {
                       <button
                         className="icon-btn danger"
                         onClick={() => {
-                          if (status !== "STARTING") confirmDelete(event);
+                          if (status !== "STARTING" && status !== "CANCELLED") confirmDelete(event);
                         }}
-                        disabled={status === "STARTING"}
+                        disabled={status === "STARTING" || status === "CANCELLED"}
                         title={
                           status === "STARTING"
                             ? "Cannot delete an event that is currently happening"
+                            : status === "CANCELLED"
+                            ? "Event already cancelled"
                             : "Delete event"
                         }
                         style={
-                          status === "STARTING"
+                          status === "STARTING" || status === "CANCELLED"
                             ? { opacity: 0.5, cursor: "not-allowed" }
                             : {}
                         }
