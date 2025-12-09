@@ -3,12 +3,9 @@ import React, { useEffect, useState } from "react";
 import "../css/myTickets_styles.css";
 import { Link } from "react-router-dom";
 
-/*
-  Helper to format 12-hour times (used in display)
-*/
+/* Helper to format 12-hour times */
 const formatTo12Hour = (time) => {
   if (!time) return "";
-
   const parts = String(time).split(":");
   if (parts.length < 2) return time;
 
@@ -28,7 +25,7 @@ export default function MyTickets() {
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
-
+  const [ticketFilter, setTicketFilter] = useState("ALL"); // ⭐ FILTER STATE ADDED
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsData, setDetailsData] = useState(null);
 
@@ -82,7 +79,6 @@ export default function MyTickets() {
           };
         }
 
-        // event attached directly to payment? fallback to p.event
         let event = null;
         const ev = ticketObj?.event ?? p.event ?? null;
         if (ev) {
@@ -127,14 +123,16 @@ export default function MyTickets() {
 
         if (!u) {
           setTickets([]);
-          setMessages([{ text: "Please login to see your tickets.", type: "info" }]);
+          setMessages([{ text: "You don't own any tickets yet.", type: "info" }]);
           setLoading(false);
           return;
         }
 
         const mapped = await fetchMyPayments(u);
         if (!mounted) return;
+
         setTickets(mapped);
+
         if (mapped.length === 0)
           setMessages([{ text: "You don't own any tickets yet.", type: "info" }]);
       } catch (err) {
@@ -155,8 +153,6 @@ export default function MyTickets() {
     t.raw?.paymentId ??
     null;
 
-
-  // FIXED — now correctly checks using the rawEvent LocalDateTime field
   const isEventFinished = (ev) => {
     if (!ev || !ev.rawEvent) return false;
 
@@ -168,37 +164,47 @@ export default function MyTickets() {
       const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
 
       return end < now;
-    } catch (err) {
-      console.error("FINISH CHECK ERR:", err);
+    } catch {
       return false;
     }
   };
 
-  // NEW — Detect if event is currently happening (STARTED)
-const isEventStarted = (ev) => {
-  if (!ev || !ev.rawEvent) return false;
+  const isEventStarted = (ev) => {
+    if (!ev || !ev.rawEvent) return false;
 
-  try {
-    const startRaw = ev.rawEvent.eventStartTime; // LocalDateTime
-    const endRaw = ev.rawEvent.eventEndTime;
+    try {
+      const startRaw = ev.rawEvent.eventStartTime;
+      const endRaw = ev.rawEvent.eventEndTime;
 
-    if (!startRaw || !endRaw) return false;
+      if (!startRaw || !endRaw) return false;
 
-    const start = new Date(startRaw);
-    const end = new Date(endRaw);
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+      const start = new Date(startRaw);
+      const end = new Date(endRaw);
+      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" }));
 
-    return now >= start && now < end;
-  } catch (err) {
-    console.error("START CHECK ERR:", err);
-    return false;
-  }
-};
+      return now >= start && now < end;
+    } catch {
+      return false;
+    }
+  };
 
+  // ⭐ FILTER LOGIC
+  const applyTicketFilter = (list) => {
+    if (ticketFilter === "ALL") return list;
 
-  // =======================
-  // MODIFY / CANCEL CHECKS
-  // =======================
+    return list.filter((t) => {
+      const ev = t.event ?? t.ticket?.event ?? null;
+
+      const finished = isEventFinished(ev);
+      const started = !finished && isEventStarted(ev);
+
+      if (ticketFilter === "FINISHED") return finished;
+      if (ticketFilter === "STARTED") return started;
+      if (ticketFilter === "AVAILABLE") return !finished && !started;
+
+      return true;
+    });
+  };
 
   const detectEventSnapshotOnPayment = (paymentRaw) => {
     if (!paymentRaw) return null;
@@ -237,8 +243,7 @@ const isEventStarted = (ev) => {
 
     for (const [keyA, keyB] of fieldsToCompare) {
       const valSnapshot = snapshot[keyA] ?? snapshot[keyB] ?? null;
-      const valNow =
-        nowEv[keyA] ?? nowEv[keyB] ?? null;
+      const valNow = nowEv[keyA] ?? nowEv[keyB] ?? null;
 
       if (String(valSnapshot).trim() !== String(valNow).trim()) {
         return true;
@@ -248,10 +253,6 @@ const isEventStarted = (ev) => {
     return false;
   };
 
-
-  // ===========================
-  // DELETE TICKET
-  // ===========================
   async function handleDelete(paymentId, { refundAllowed = true } = {}) {
     if (!paymentId) {
       alert("Unable to delete this ticket. Missing payment ID.");
@@ -277,12 +278,10 @@ const isEventStarted = (ev) => {
 
       setTickets((prev) => prev.filter((t) => getPaymentId(t) !== paymentId));
       setMessages([{ text: refundAllowed ? "Ticket deleted and refunded!" : "Ticket deleted.", type: "success" }]);
-    } catch (err) {
-      console.error("delete error", err);
+    } catch {
       setMessages([{ text: "Failed to delete ticket. Try again.", type: "error" }]);
     }
   }
-
 
   const deriveTicketType = (t) => {
     const maybe =
@@ -338,13 +337,17 @@ const isEventStarted = (ev) => {
     setDetailsOpen(true);
   };
 
-  const filteredTickets = tickets.filter((t) => {
-    const ev = t.event ?? t.ticket?.event ?? {};
-    const ticketType = deriveTicketType(t);
-    const text = `${ev?.event_name ?? ""} ${ev?.event_venue ?? ""} ${ticketType}`.toLowerCase();
-    return text.includes(search.toLowerCase());
-  });
+  // ⭐ APPLY FILTER & SEARCH
+  const filteredTickets = applyTicketFilter(
+    tickets.filter((t) => {
+      const ev = t.event ?? t.ticket?.event ?? {};
+      const ticketType = deriveTicketType(t);
+      const text = `${ev?.event_name ?? ""} ${ev?.event_venue ?? ""} ${ticketType}`.toLowerCase();
+      return text.includes(search.toLowerCase());
+    })
+  );
 
+  // Banner styles kept in JS for convenience
   const finishedBannerStyle = {
     backgroundColor: "#e53935",
     color: "#ffffff",
@@ -356,21 +359,21 @@ const isEventStarted = (ev) => {
   };
 
   const startedBannerStyle = {
-  backgroundColor: "#fb8c00",
-  color: "#ffffff",
-  padding: "6px 10px",
-  textAlign: "center",
-  fontWeight: "700",
-  borderRadius: "6px",
-  marginBottom: "10px",
-};
+    backgroundColor: "#fb8c00",
+    color: "#ffffff",
+    padding: "6px 10px",
+    textAlign: "center",
+    fontWeight: "700",
+    borderRadius: "6px",
+    marginBottom: "10px",
+  };
 
   const cancelledStyle = {
     backgroundColor: "#b71c1c",
     color: "#fff",
     padding: "6px 10px",
     textAlign: "center",
-    borderRadius: "6px",
+    borderRadius: 6,
     marginBottom: 10,
     fontWeight: 700,
   };
@@ -380,7 +383,7 @@ const isEventStarted = (ev) => {
     color: "#fff",
     padding: "6px 10px",
     textAlign: "center",
-    borderRadius: "6px",
+    borderRadius: 6,
     marginBottom: 10,
     fontWeight: 700,
   };
@@ -390,10 +393,15 @@ const isEventStarted = (ev) => {
     color: "#fff",
     padding: "6px 10px",
     textAlign: "center",
-    borderRadius: "6px",
+    borderRadius: 6,
     marginBottom: 10,
     fontWeight: 700,
   };
+
+  // Determine whether we should display the filters directly above the "You don't own any tickets yet." info message
+  const hasNoTicketsMessage = messages.some((m) =>
+    typeof m.text === "string" && /you don't own any tickets yet/i.test(m.text)
+  );
 
   return (
     <div className="ticket-page">
@@ -416,6 +424,39 @@ const isEventStarted = (ev) => {
         <div style={{ padding: 30, textAlign: "center" }}>Loading your tickets…</div>
       ) : (
         <>
+          {/* === FILTER BUTTONS: placed just above the No-Tickets message when that message is present */}
+          {hasNoTicketsMessage && (
+            <div className="filter-buttons" style={{ margin: "18px 0" }}>
+              <button
+                className={`filter-btn ${ticketFilter === "ALL" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("ALL")}
+              >
+                All Tickets
+              </button>
+
+              <button
+                className={`filter-btn ${ticketFilter === "FINISHED" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("FINISHED")}
+              >
+                Finished Events
+              </button>
+
+              <button
+                className={`filter-btn ${ticketFilter === "AVAILABLE" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("AVAILABLE")}
+              >
+                Available Tickets
+              </button>
+
+              <button
+                className={`filter-btn ${ticketFilter === "STARTED" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("STARTED")}
+              >
+                Started Events
+              </button>
+            </div>
+          )}
+
           {messages.length > 0 && (
             <div className="messages" style={{ maxWidth: 900, margin: "12px auto" }}>
               {messages.map((msg, idx) => (
@@ -423,6 +464,39 @@ const isEventStarted = (ev) => {
                   {msg.text}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Also show filters above the tickets grid (for normal flow when the user has tickets) */}
+          {!hasNoTicketsMessage && (
+            <div className="filter-buttons" style={{ margin: "18px 0" }}>
+              <button
+                className={`filter-btn ${ticketFilter === "ALL" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("ALL")}
+              >
+                All Tickets
+              </button>
+
+              <button
+                className={`filter-btn ${ticketFilter === "FINISHED" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("FINISHED")}
+              >
+                Finished Events
+              </button>
+
+              <button
+                className={`filter-btn ${ticketFilter === "AVAILABLE" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("AVAILABLE")}
+              >
+                Available Tickets
+              </button>
+
+              <button
+                className={`filter-btn ${ticketFilter === "STARTED" ? "active-filter" : ""}`}
+                onClick={() => setTicketFilter("STARTED")}
+              >
+                Started Events
+              </button>
             </div>
           )}
 
@@ -447,15 +521,15 @@ const isEventStarted = (ev) => {
 
                   let banner = null;
                   if (finished)
-                  banner = { style: finishedBannerStyle, text: "EVENT FINISHED" };
-                else if (started)
-                  banner = { style: startedBannerStyle, text: "EVENT STARTED" };
-                else if (cancelled)
-                  banner = { style: cancelledStyle, text: "EVENT CANCELLED" };
-                else if (modified)
-                  banner = { style: modifiedStyle, text: "EVENT MODIFIED" };
-                else
-                  banner = { style: neutralStyle, text: "TICKET AVAILABLE" };
+                    banner = { style: finishedBannerStyle, text: "EVENT FINISHED" };
+                  else if (started)
+                    banner = { style: startedBannerStyle, text: "EVENT STARTED" };
+                  else if (cancelled)
+                    banner = { style: cancelledStyle, text: "EVENT CANCELLED" };
+                  else if (modified)
+                    banner = { style: modifiedStyle, text: "EVENT MODIFIED" };
+                  else
+                    banner = { style: neutralStyle, text: "TICKET AVAILABLE" };
 
                   const refundAllowed = !finished && !cancelled;
 
@@ -539,7 +613,8 @@ const isEventStarted = (ev) => {
               <p><strong>Event Name:</strong> {detailsData.event?.event_name ?? "-"}</p>
               <p><strong>Venue:</strong> {detailsData.event?.event_venue ?? "-"}</p>
               <p><strong>Date:</strong> {detailsData.event?.event_date ? String(detailsData.event.event_date).split("T")[0] : "-"}</p>
-              <p><strong>Time:</strong>{" "}
+              <p>
+                <strong>Time:</strong>{" "}
                 {formatTo12Hour(detailsData.event?.event_time_in)} —
                 {formatTo12Hour(detailsData.event?.event_time_out)}
               </p>
