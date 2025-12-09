@@ -32,131 +32,59 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
   let userId = getParam("userId");
   let ticketId = getParam("ticketId");
 
-  // handle numeric values from location.state
-  if (!userId && fromState.userId) userId = fromState.userId;
-  if (!ticketId && fromState.ticketId) ticketId = fromState.ticketId;
+  const event_date = fromState.event_date;
+  const event_time_in = fromState.event_time_in;
+  const event_time_out = fromState.event_time_out;
 
-  // handle nested state structures
-  if (!userId && fromState.user && fromState.user.userId) userId = fromState.user.userId;
-  if (!ticketId && fromState.ticket && fromState.ticket.ticketId) ticketId = fromState.ticket.ticketId;
+  const status = getEventStatus(event_date, event_time_in, event_time_out);
 
   const [ticketPrice, setTicketPrice] = useState(null);
   const [remainingWallet, setRemainingWallet] = useState(null);
 
-  // loading / error states
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // MESSAGE HANDLING
-  const incomingMessages = Array.isArray(fromState.messages) ? fromState.messages : [];
-  const initialMessages = propMessages.concat(incomingMessages);
-
+  const initialMessages = propMessages.concat(fromState.messages || []);
   const [visibleMessages, setVisibleMessages] = useState(initialMessages);
 
-  const displayMs = 2000;
-  const exitAnimationMs = 600;
-
+  // BLOCK PURCHASE WHEN EVENT IS HAPPENING OR FINISHED
   useEffect(() => {
-    if (!visibleMessages || visibleMessages.length === 0) return;
+    if (status !== "AVAILABLE") {
 
-    const stayTimer = setTimeout(() => {
-      setIsExiting(true);
-      const removeTimer = setTimeout(() => {
-        setVisibleMessages([]);
-        setIsExiting(false);
-      }, exitAnimationMs);
+      setVisibleMessages([
+        {
+          text:
+            status === "STARTING"
+              ? "This event is currently happening. You cannot buy this ticket."
+              : "This event has already ended. Ticket purchase is disabled.",
+          type: "error",
+        },
+      ]);
 
-      return () => clearTimeout(removeTimer);
-    }, displayMs);
-
-    return () => clearTimeout(stayTimer);
-  }, []); // run once on mount
-
-  const dismissNow = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      setVisibleMessages([]);
-      setIsExiting(false);
-    }, exitAnimationMs);
-  };
-
-  // FORMATTING CURRENCY
-  const fmt = (v) => {
-    const n = typeof v === "number" ? v : parseFloat(String(v || "0"));
-    if (Number.isNaN(n)) return "₱0.00";
-    return `₱${n.toFixed(2)}`;
-  };
-
-  // ▶️ CALL BACKEND WHEN PAGE LOADS
-  useEffect(() => {
-    // guard: we need both ids
-    if (!userId || !ticketId) {
-      console.warn("Missing userId or ticketId in BuyTicket page", { userId, ticketId });
-      setError("Missing purchase information. If you were redirected here, try again from the event page.");
-      return;
+      const timer = setTimeout(() => navigate("/home"), 2000);
+      return () => clearTimeout(timer);
     }
   }, [status]);
 
-    // if we already have results, don't call again
-    if (ticketPrice !== null || remainingWallet !== null) return;
-
-    let mounted = true;
-    async function purchase() {
-      setLoading(true);
-      setError(null);
+  // Proceed with purchase when event is available
+  useEffect(() => {
+    if (!userId || !ticketId || status !== "AVAILABLE") return;
 
     async function purchase() {
       try {
         const resp = await fetch(
-          `http://localhost:8080/api/payment/purchase?userId=${encodeURIComponent(userId)}&ticketId=${encodeURIComponent(ticketId)}`,
-          {
-            method: "POST",
-            credentials: "include"
-          }
+          `http://localhost:8080/api/payment/purchase?userId=${userId}&ticketId=${ticketId}`,
+          { method: "POST" }
         );
-
-        if (!resp.ok) {
-          // try to parse body for a helpful message
-          let bodyText = "";
-          try {
-            const potential = await resp.json();
-            bodyText = potential?.message || JSON.stringify(potential);
-          } catch {
-            bodyText = await resp.text().catch(() => "");
-          }
-          throw new Error(`Server returned ${resp.status}${bodyText ? `: ${bodyText}` : ""}`);
-        }
 
         const data = await resp.json();
 
-        console.log("BACKEND RESULT =", data);
-
-        if (!mounted) return;
-
-        // Set values if present; tolerate different keys
-        setTicketPrice(data.ticketPrice ?? data.ticket_price ?? null);
-        setRemainingWallet(data.remainingWallet ?? data.remaining_wallet ?? data.remaining ?? null);
-        setLoading(false);
+        setTicketPrice(data.ticketPrice);
+        setRemainingWallet(data.remainingWallet);
       } catch (err) {
         console.error("Purchase error:", err);
-        if (!mounted) return;
-        setError(err.message || "Purchase failed");
-        setLoading(false);
       }
     }
 
     purchase();
-
-    return () => {
-      mounted = false;
-    };
-  }, [userId, ticketId, ticketPrice, remainingWallet]);
-
-  // DEBUG logs (remove in production)
-  console.log("DEBUG → userId:", userId);
-  console.log("DEBUG → ticketId:", ticketId);
-  console.log("DEBUG → location.state:", fromState);
-  console.log("DEBUG → qp:", Object.fromEntries(qp.entries()));
+  }, [userId, ticketId, status]);
 
   return (
     <div className="buyticket-page">
@@ -165,45 +93,10 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
           {status !== "AVAILABLE" ? "Purchase Blocked" : "Ticket Purchase Successful!"}
         </h1>
 
-        <h1 className="buyticket-title">Ticket Purchase Successful!</h1>
-
-        <p className="lead-text">
-          Your payment was successful. Here is your transaction summary:
-        </p>
-
-        {/* show loader / error */}
-        {loading && <div className="loading">Loading transaction details…</div>}
-        {error && (
-          <div className="error-box">
-            <strong>Error:</strong> {error}
-            <div style={{ marginTop: 8 }}>
-              <button onClick={() => window.location.reload()} className="retry-btn">Retry</button>
-            </div>
-          </div>
-        )}
-
-        {/* PRICE / BALANCE BOX */}
-        <div className="summary-box">
-          <div className="row">
-            <strong>Ticket Price:</strong>
-            <span>
-              {ticketPrice !== null ? fmt(ticketPrice) : (loading ? "Loading..." : "—")}
-            </span>
-          </div>
-
-          <div className="row balance">
-            <strong>Remaining Wallet Balance:</strong>
-            <span className="green">
-              {remainingWallet !== null ? fmt(remainingWallet) : (loading ? "Loading..." : "—")}
-            </span>
-          </div>
-        </div>
-
-        {/* EMAIL SENT INFO */}
         <div className="info-box">
-          Your ticket details have been sent to your email!
-          <br />
-          {user?.email ? <span>Sent to: <strong>{user.email}</strong></span> : null}
+          {status === "STARTING" && "This event is currently happening. Purchase is disabled."}
+          {status === "FINISHED" && "This event has already ended. Purchase is disabled."}
+          {status === "AVAILABLE" && "Your ticket details have been sent to your email!"}
         </div>
 
         <div className="note-box">

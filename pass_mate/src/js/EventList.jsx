@@ -96,8 +96,6 @@ export default function EventList() {
     serverUser: srv.user ?? srv.createdBy ?? null,
     ticket_price_vip: null,
     ticket_price_standard: null,
-    // include status so front-end can filter cancelled events
-    event_status: (srv.eventStatus ?? srv.event_status ?? "").toString(),
   });
 
   const formatPrice = (p) => {
@@ -122,7 +120,6 @@ export default function EventList() {
       const grouped = groupTicketsByEvent(ticketsData);
       setTicketsByEvent(grouped);
 
-      // map server events
       const mapped = eventsData.map((srv) => {
         const base = mapServerEvent(srv);
         const tb = grouped[Number(base.id)];
@@ -143,14 +140,7 @@ export default function EventList() {
         return base;
       });
 
-      // FILTER OUT CANCELLED EVENTS (case-insensitive)
-      const notCancelled = mapped.filter((e) => {
-        const status = (e.event_status ?? "").toString().trim().toUpperCase();
-        return status !== "CANCELLED";
-      });
-
-      // from notCancelled, extract only events that belong to current user (same logic you had)
-      const mine = notCancelled.filter((e) => {
+      const mine = mapped.filter((e) => {
         if (e.serverUser && typeof e.serverUser === "object" && e.serverUser.userId) {
           return Number(e.serverUser.userId) === userId;
         }
@@ -212,14 +202,29 @@ export default function EventList() {
   const deleteEvent = async () => {
     if (!deleteTarget) return;
     try {
+      const ticketsRes = await axios.get("http://localhost:8080/api/ticket/all", { withCredentials: true });
+      const ticketsData = Array.isArray(ticketsRes.data) ? ticketsRes.data : [];
+
+      const ticketsForEvent = ticketsData.filter((t) => {
+        const eid = t.event?.eventId ?? t.event?.id ?? t.eventId ?? t.event_id;
+        return Number(eid) === Number(deleteTarget.id);
+      });
+
+      if (ticketsForEvent.length > 0) {
+        const deletePromises = ticketsForEvent.map((t) => {
+          const tid = ticketGetId(t);
+          if (!tid) return Promise.resolve();
+          return axios.delete(`http://localhost:8080/api/ticket/delete/${tid}`, { withCredentials: true });
+        });
+        await Promise.all(deletePromises);
+      }
+
       const res = await axios.delete(
         `http://localhost:8080/api/events/delete/${deleteTarget.id}`,
         { withCredentials: true }
       );
 
       if (res.status >= 200 && res.status < 300) {
-        // remove from local state (already filtered to not show CANCELLED events,
-        // but if your backend truly deletes the event, just remove it from UI)
         setLocalEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setShowDeleteModal(false);
         setDeleteTarget(null);
