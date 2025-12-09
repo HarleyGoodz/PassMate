@@ -15,11 +15,11 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
   let userId = getParam("userId", "");
   let ticketId = getParam("ticketId", "");
 
-  // 🔥 FIX #1: handle numeric values from location.state
+  // handle numeric values from location.state
   if (!userId && fromState.userId) userId = fromState.userId;
   if (!ticketId && fromState.ticketId) ticketId = fromState.ticketId;
 
-  // 🔥 FIX #2: handle nested state structures (most common React cause)
+  // handle nested state structures
   if (!userId && fromState.user && fromState.user.userId) userId = fromState.user.userId;
   if (!ticketId && fromState.ticket && fromState.ticket.ticketId) ticketId = fromState.ticket.ticketId;
 
@@ -29,7 +29,11 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
   const [ticketPrice, setTicketPrice] = useState(null);
   const [remainingWallet, setRemainingWallet] = useState(null);
 
-  // MESSAGE HANDLING (unchanged)
+  // loading / error states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // MESSAGE HANDLING
   const incomingMessages = Array.isArray(fromState.messages) ? fromState.messages : [];
   const initialMessages = propMessages.concat(incomingMessages);
 
@@ -53,7 +57,7 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
     }, displayMs);
 
     return () => clearTimeout(stayTimer);
-  }, []);
+  }, []); // run once on mount
 
   const dismissNow = () => {
     setIsExiting(true);
@@ -72,35 +76,68 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
 
   // ▶️ CALL BACKEND WHEN PAGE LOADS
   useEffect(() => {
+    // guard: we need both ids
     if (!userId || !ticketId) {
-      console.log("❌ Missing userId or ticketId", { userId, ticketId });
+      console.warn("Missing userId or ticketId in BuyTicket page", { userId, ticketId });
+      setError("Missing purchase information. If you were redirected here, try again from the event page.");
       return;
     }
 
+    // if we already have results, don't call again
+    if (ticketPrice !== null || remainingWallet !== null) return;
+
+    let mounted = true;
     async function purchase() {
+      setLoading(true);
+      setError(null);
 
       try {
         const resp = await fetch(
-          `http://localhost:8080/api/payment/purchase?userId=${userId}&ticketId=${ticketId}`,
-          { method: "POST" }
+          `http://localhost:8080/api/payment/purchase?userId=${encodeURIComponent(userId)}&ticketId=${encodeURIComponent(ticketId)}`,
+          {
+            method: "POST",
+            credentials: "include"
+          }
         );
+
+        if (!resp.ok) {
+          // try to parse body for a helpful message
+          let bodyText = "";
+          try {
+            const potential = await resp.json();
+            bodyText = potential?.message || JSON.stringify(potential);
+          } catch {
+            bodyText = await resp.text().catch(() => "");
+          }
+          throw new Error(`Server returned ${resp.status}${bodyText ? `: ${bodyText}` : ""}`);
+        }
 
         const data = await resp.json();
 
-        // 🔥 DEBUG LOG (REQUIRED)
         console.log("BACKEND RESULT =", data);
 
-        // SET REAL VALUES
-        setTicketPrice(data.ticketPrice);
-        setRemainingWallet(data.remainingWallet);
+        if (!mounted) return;
+
+        // Set values if present; tolerate different keys
+        setTicketPrice(data.ticketPrice ?? data.ticket_price ?? null);
+        setRemainingWallet(data.remainingWallet ?? data.remaining_wallet ?? data.remaining ?? null);
+        setLoading(false);
       } catch (err) {
         console.error("Purchase error:", err);
+        if (!mounted) return;
+        setError(err.message || "Purchase failed");
+        setLoading(false);
       }
     }
 
     purchase();
-  }, [userId, ticketId]);
 
+    return () => {
+      mounted = false;
+    };
+  }, [userId, ticketId, ticketPrice, remainingWallet]);
+
+  // DEBUG logs (remove in production)
   console.log("DEBUG → userId:", userId);
   console.log("DEBUG → ticketId:", ticketId);
   console.log("DEBUG → location.state:", fromState);
@@ -117,19 +154,30 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
           Your payment was successful. Here is your transaction summary:
         </p>
 
+        {/* show loader / error */}
+        {loading && <div className="loading">Loading transaction details…</div>}
+        {error && (
+          <div className="error-box">
+            <strong>Error:</strong> {error}
+            <div style={{ marginTop: 8 }}>
+              <button onClick={() => window.location.reload()} className="retry-btn">Retry</button>
+            </div>
+          </div>
+        )}
+
         {/* PRICE / BALANCE BOX */}
         <div className="summary-box">
           <div className="row">
             <strong>Ticket Price:</strong>
             <span>
-              {ticketPrice !== null ? fmt(ticketPrice) : "Loading..."}
+              {ticketPrice !== null ? fmt(ticketPrice) : (loading ? "Loading..." : "—")}
             </span>
           </div>
 
           <div className="row balance">
             <strong>Remaining Wallet Balance:</strong>
             <span className="green">
-              {remainingWallet !== null ? fmt(remainingWallet) : "Loading..."}
+              {remainingWallet !== null ? fmt(remainingWallet) : (loading ? "Loading..." : "—")}
             </span>
           </div>
         </div>
@@ -138,7 +186,7 @@ export default function BuyTicket({ qrImage: propQrImage = null, messages: propM
         <div className="info-box">
           Your ticket details have been sent to your email!
           <br />
-          
+          {user?.email ? <span>Sent to: <strong>{user.email}</strong></span> : null}
         </div>
 
         {/* NOTE */}
