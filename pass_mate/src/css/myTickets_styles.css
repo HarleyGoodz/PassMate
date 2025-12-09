@@ -179,8 +179,9 @@
   font-size: 48px;
   font-weight: 800;
   color: #fff;
+
   letter-spacing: -1px;
-  animation: fadeInUp 0.8s ease-out, glow 2s ease-in-out infinite;
+    animation: none !important;
   position: absolute;
   left: 50%;
   transform: translateX(-50%);

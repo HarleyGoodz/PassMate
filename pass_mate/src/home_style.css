@@ -215,7 +215,6 @@ body {
   font-weight: 600;
   margin-top: 8px;
 }
-
 /* =============================== */
 /* FILTER BUTTONS (MATCH TOP BUTTON STYLE) */
 /* =============================== */
@@ -228,22 +227,26 @@ body {
     flex-wrap: wrap;
 }
 
+/* === CLEANED + MERGED === */
 .filter-btn {
-    background: linear-gradient(135deg, #fff 0%, #f8f8f8 100%);
+    display: inline-block;
+    background: linear-gradient(135deg, #fff 0%, #f8f8f8 100%); /* white */
     color: #333;
     border: 2px solid transparent;
     border-radius: 30px;
-    padding: 11px 24px;
-    font-size: 14px;
+    padding: 12px 32px;
+    font-size: 15px;
     font-weight: 700;
+    margin-bottom: 50px;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
+/* ⭐ Darker orange hover overlay */
 .filter-btn::before {
     content: "";
     position: absolute;
@@ -251,11 +254,12 @@ body {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #ffa751 0%, #ffe259 100%);
-    transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #cc6a00 0%, #ff9f1c 100%);
+    transition: left 0.4s ease;
     z-index: -1;
 }
 
+/* Hover */
 .filter-btn:hover::before {
     left: 0;
 }
@@ -263,19 +267,12 @@ body {
 .filter-btn:hover {
     color: #fff;
     transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(255, 167, 81, 0.4);
-    border-color: rgba(255, 167, 81, 0.3);
+    box-shadow: 0 6px 20px rgba(204, 106, 0, 0.4);
+    border-color: rgba(204, 106, 0, 0.3);
 }
 
-/* ACTIVE SELECTED FILTER */
-.filter-btn.active-filter {
-    color: #fff !important;
-    border-color: rgba(255, 167, 81, 0.5);
-}
 
-.filter-btn.active-filter::before {
-    left: 0 !important;
-}
+
 
 
 .hero .search-bar {
@@ -346,30 +343,6 @@ body {
     line-height: 1.7;
     font-weight: 400;
     max-width: 650px;
-}
-
-/* =============================== */
-/* Filter Button */
-/* =============================== */
-
-.filter-btn {
-    display: inline-block;
-    background: linear-gradient(135deg, #ffa751 0%, #ffe259 100%);
-    color: #fff;
-    border: none;
-    border-radius: 25px;
-    padding: 12px 32px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-bottom: 35px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(255, 167, 81, 0.3);
-}
-
-.filter-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 167, 81, 0.4);
 }
 
 /* =============================== */

@@ -50,6 +50,7 @@ export default function EventList() {
   const [ticketsByEvent, setTicketsByEvent] = useState({});
   const [openBreakdownId, setOpenBreakdownId] = useState(null);
   const [search, setSearch] = useState("");
+  const [eventFilter, setEventFilter] = useState("ALL"); // NEW: filter state
 
   const userId = Number(localStorage.getItem("userId") || 0);
 
@@ -168,6 +169,7 @@ export default function EventList() {
 
   useEffect(() => {
     fetchEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -175,12 +177,14 @@ export default function EventList() {
     if (location.search.includes("purchased=true") || location.search.includes("already=true")) {
       fetchEvents();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   useEffect(() => {
     const onFocus = () => fetchEvents();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleEdit = (event) => {
@@ -237,10 +241,25 @@ export default function EventList() {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
   };
 
-  const filteredEvents = localEvents.filter((event) => {
-    const txt = `${event.event_name} ${event.event_venue} ${event.event_category}`.toLowerCase();
-    return txt.includes(search.toLowerCase());
-  });
+  // New: filter function that uses eventFilter
+  const applyEventFilter = (events) => {
+    if (!eventFilter || eventFilter === "ALL") return events;
+
+    return events.filter((e) => {
+      const status = getEventStatus(e.event_date, e.event_time_in, e.event_time_out);
+      if (eventFilter === "FINISHED") return status === "FINISHED";
+      if (eventFilter === "STARTING") return status === "STARTING";
+      if (eventFilter === "AVAILABLE") return status === "AVAILABLE";
+      return true;
+    });
+  };
+
+  const filteredEvents = applyEventFilter(
+    localEvents.filter((event) => {
+      const txt = `${event.event_name} ${event.event_venue} ${event.event_category}`.toLowerCase();
+      return txt.includes(search.toLowerCase());
+    })
+  );
 
   // Banner Styles
   const statusStyles = {
@@ -278,7 +297,7 @@ export default function EventList() {
       <Link to="/home" className="eventlist-back">Back to home</Link>
       <h1 className="eventlist-title fade-in">Your Events</h1>
 
-      <div className="search-bar-container fade-in" style={{ marginBottom: "100px" }}>
+      <div className="search-bar-container fade-in" style={{ marginBottom: "18px" }}>
         <input
           type="text"
           className="ticket-search-input"
@@ -286,6 +305,37 @@ export default function EventList() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+      </div>
+
+      {/* FILTER BUTTONS - added below search */}
+      <div className="filter-buttons" style={{ marginBottom: 30 }}>
+        <button
+          className={`filter-btn ${eventFilter === "ALL" ? "active-filter" : ""}`}
+          onClick={() => setEventFilter("ALL")}
+        >
+          All Events
+        </button>
+
+        <button
+          className={`filter-btn ${eventFilter === "AVAILABLE" ? "active-filter" : ""}`}
+          onClick={() => setEventFilter("AVAILABLE")}
+        >
+          Available
+        </button>
+
+        <button
+          className={`filter-btn ${eventFilter === "STARTING" ? "active-filter" : ""}`}
+          onClick={() => setEventFilter("STARTING")}
+        >
+          Starting
+        </button>
+
+        <button
+          className={`filter-btn ${eventFilter === "FINISHED" ? "active-filter" : ""}`}
+          onClick={() => setEventFilter("FINISHED")}
+        >
+          Finished
+        </button>
       </div>
 
       <div className="eventlist-wrapper fade-in">
@@ -353,7 +403,7 @@ export default function EventList() {
                       <span className="price-regular">
                         {formatPrice(event.ticket_price_standard)} Regular
                       </span>
-                      <span className="price-vip">
+                      <span className="price-vip" style={{ marginLeft: 8 }}>
                         {formatPrice(event.ticket_price_vip)} VIP
                       </span>
                     </span>
@@ -373,7 +423,7 @@ export default function EventList() {
                     aria-expanded={openBreakdownId === event.id}
                   >
                     {openBreakdownId === event.id ? "Hide breakdown" : "View breakdown"}
-                    <span className="ticket-count" style={{ pointerEvents: "none" }}>
+                    <span className="ticket-count" style={{ pointerEvents: "none", marginLeft: 8 }}>
                       {totalCount}
                     </span>
                   </button>
