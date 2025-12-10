@@ -44,6 +44,11 @@
     text-align: left !important;
 }
 
+.ticket-info-section p {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
 /* SEARCH BAR CONTAINER */
 .search-bar-container {
     margin: 25px auto;
@@ -774,44 +779,6 @@
   display: inline-block;
   min-width: 100px;
 }
-
-/* FILTER BUTTONS */
-.filter-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin: 18px 0;
-}
-
-.filter-btn {
-  padding: 10px 20px;
-  background: white;
-  color: #6b7280;
-  border: 2px solid #e5e7eb;
-  border-radius: 25px;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.filter-btn:hover {
-  border-color: #ffa751;
-  color: #ff9045;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 167, 81, 0.2);
-}
-
-.filter-btn.active-filter {
-  background: linear-gradient(135deg, #ffa751 0%, #ffe259 100%);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 6px 20px rgba(255, 167, 81, 0.3);
-}
-
 /* RESPONSIVE DESIGN */
 @media (max-width: 1200px) {
   .tickets-grid {

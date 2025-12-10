@@ -50,6 +50,7 @@ export default function EventList() {
   const [ticketsByEvent, setTicketsByEvent] = useState({});
   const [openBreakdownId, setOpenBreakdownId] = useState(null);
   const [search, setSearch] = useState("");
+  const [deleting, setDeleting] = useState(false);
   // default changed to NON_CANCELLED so CANCELLED events are hidden by default
   const [eventFilter, setEventFilter] = useState("NON_CANCELLED");
 
@@ -203,43 +204,35 @@ export default function EventList() {
   const ticketGetId = (ticket) =>
     ticket.ticketId ?? ticket.id ?? ticket.ticket_id ?? ticket._id;
 
-  const deleteEvent = async () => {
-    if (!deleteTarget) return;
-    try {
-      const ticketsRes = await axios.get("http://localhost:8080/api/ticket/all", { withCredentials: true });
-      const ticketsData = Array.isArray(ticketsRes.data) ? ticketsRes.data : [];
+const deleteEvent = async () => {
+  if (!deleteTarget) return;
 
-      const ticketsForEvent = ticketsData.filter((t) => {
-        const eid = t.event?.eventId ?? t.event?.id ?? t.eventId ?? t.event_id;
-        return Number(eid) === Number(deleteTarget.id);
-      });
+  setDeleting(true);  // <-- START loading
 
-      if (ticketsForEvent.length > 0) {
-        const deletePromises = ticketsForEvent.map((t) => {
-          const tid = ticketGetId(t);
-          if (!tid) return Promise.resolve();
-          return axios.delete(`http://localhost:8080/api/ticket/delete/${tid}`, { withCredentials: true });
-        });
-        await Promise.all(deletePromises);
-      }
+  try {
+    const res = await axios.delete(
+      `http://localhost:8080/api/events/delete/${deleteTarget.id}`,
+      { withCredentials: true }
+    );
 
-      const res = await axios.delete(
-        `http://localhost:8080/api/events/delete/${deleteTarget.id}`,
-        { withCredentials: true }
-      );
+    const msg = res?.data ?? "Event cancelled";
 
-      if (res.status >= 200 && res.status < 300) {
-        setLocalEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
-        setShowDeleteModal(false);
-        setDeleteTarget(null);
-        setOpenBreakdownId((prev) => (prev === deleteTarget.id ? null : prev));
-      } else {
-        alert("Failed to delete event.");
-      }
-    } catch (err) {
-      alert("Error deleting event: " + (err.response?.data || err.message));
-    }
-  };
+    // remove from UI
+    setLocalEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
+    setOpenBreakdownId((prev) => (prev === deleteTarget.id ? null : prev));
+  } catch (err) {
+    const serverMsg =
+      err?.response?.data
+        ? (typeof err.response.data === "string" ? err.response.data : JSON.stringify(err.response.data))
+        : err.message;
+
+    alert("Error deleting event: " + serverMsg);
+  } finally {
+    setDeleting(false); // <-- END loading
+  }
+};
 
   const toggleBreakdown = (eventId) => {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
@@ -577,9 +570,15 @@ export default function EventList() {
         title="Delete Event"
         message={deleteTarget ? `Delete "${deleteTarget.event_name}"?` : ""}
         showCancel={true}
-        confirmText="Delete"
+        confirmText={
+  deleting ? (
+    <span><span className="delete-loading-spinner" /> Deleting…</span>
+  ) : (
+    "Delete"
+  )
+}
         cancelText="Cancel"
-        onConfirm={deleteEvent}
+        onConfirm={deleting ? null : deleteEvent}
         onClose={() => setShowDeleteModal(false)}
       />
     </div>
