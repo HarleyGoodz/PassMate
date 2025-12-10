@@ -160,18 +160,22 @@ export default function EventDetails() {
       const regularAvailable = regular.filter((t) => t.availability !== false).length;
       const vipAvailable = vip.filter((t) => t.availability !== false).length;
 
+      // pick an available ticket for each type (not simply the first array element)
+      const availableRegularTicket = regular.find(t => t.availability !== false);
+      const availableVipTicket = vip.find(t => t.availability !== false);
+
       setRegularInfo({
         count: regular.length,
         available: regularAvailable,
-        price: regular[0]?.ticketPrice ?? regular[0]?.ticket_price ?? null,
-        id: regular[0]?.ticketId ?? regular[0]?.id ?? null
+        price: availableRegularTicket?.ticketPrice ?? availableRegularTicket?.ticket_price ?? null,
+        id: availableRegularTicket?.ticketId ?? availableRegularTicket?.id ?? null
       });
 
       setVipInfo({
         count: vip.length,
         available: vipAvailable,
-        price: vip[0]?.ticketPrice ?? vip[0]?.ticket_price ?? null,
-        id: vip[0]?.ticketId ?? vip[0]?.id ?? null
+        price: availableVipTicket?.ticketPrice ?? availableVipTicket?.ticket_price ?? null,
+        id: availableVipTicket?.ticketId ?? availableVipTicket?.id ?? null
       });
 
       if (currentEvent.ticket_limit) {
@@ -286,7 +290,8 @@ export default function EventDetails() {
             show: true,
             title: "You Already Purchased",
             message: "You already have a ticket for this event.",
-            onConfirm: null
+            onConfirm: null,
+            loading: false
           });
           return;
         }
@@ -301,12 +306,28 @@ export default function EventDetails() {
       );
 
       if (!resp.ok) {
+        let errMsg = "Purchase failed. Please try again.";
+        try {
+          const contentType = resp.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const json = await resp.json();
+            errMsg = json.message || json.error || JSON.stringify(json);
+          } else {
+            errMsg = await resp.text();
+          }
+        } catch (e) {
+          // fallback
+        }
+
         setModal({
           show: true,
           title: "Purchase Unsuccessful",
-          message: "Purchase failed. Please try again.",
-          onConfirm: null
+          message: errMsg,
+          onConfirm: null,
+          loading: false
         });
+        // refresh ticket availability so UI updates after failure
+        await refreshAll();
         return;
       }
 
@@ -331,8 +352,10 @@ export default function EventDetails() {
         show: true,
         title: "Error",
         message: `An error occurred: ${err.message}`,
-        onConfirm: null
+        onConfirm: null,
+        loading: false
       });
+      await refreshAll();
     }
   };
 
@@ -344,7 +367,11 @@ export default function EventDetails() {
         title={modal.title}
         message={modal.message}
         loading={modal.loading}
-        onClose={() => setModal({ ...modal, show: false, loading: false })}
+        onClose={async () => {
+          setModal({ ...modal, show: false, loading: false });
+          // refresh ticket data when modal is closed so UI stays in sync
+          try { await refreshAll(); } catch (_) { /* ignore */ }
+        }}
         onConfirm={modal.onConfirm}
       />
 
@@ -384,7 +411,10 @@ export default function EventDetails() {
                       show: true,
                       title: "Confirm Purchase",
                       message: `Buy Regular Ticket for ₱${regularInfo.price}?`,
-                      onConfirm: () => handleConfirmPurchase(regularInfo.id)
+                      onConfirm: () => {
+                        setModal(prev => ({ ...prev, show: true, loading: true }));
+                        handleConfirmPurchase(regularInfo.id);
+                      }
                     })
                   }
                 >
@@ -413,7 +443,10 @@ export default function EventDetails() {
                       show: true,
                       title: "Confirm Purchase",
                       message: `Buy VIP Ticket for ₱${vipInfo.price}?`,
-                      onConfirm: () => handleConfirmPurchase(vipInfo.id)
+                      onConfirm: () => {
+                        setModal(prev => ({ ...prev, show: true, loading: true }));
+                        handleConfirmPurchase(vipInfo.id);
+                      }
                     })
                   }
                 >
