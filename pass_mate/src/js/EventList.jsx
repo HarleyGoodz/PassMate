@@ -53,6 +53,7 @@ export default function EventList() {
   const [openBreakdownId, setOpenBreakdownId] = useState(null);
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [deleteWillCancel, setDeleteWillCancel] = useState(false);
   // default changed to NON_CANCELLED so CANCELLED events are hidden by default
   const [eventFilter, setEventFilter] = useState("NON_CANCELLED");
 
@@ -277,8 +278,26 @@ export default function EventList() {
     navigate(`/edit-event/${event.id}`, { state: { event } });
   };
 
+  // confirmDelete now inspects ticketsByEvent to determine whether deletion will actually be a cancel
   const confirmDelete = (event) => {
     setDeleteTarget(event);
+
+    const tb = ticketsByEvent[Number(event.id)] ?? { raw: [] };
+    const raw = tb.raw ?? [];
+
+    // heuristics: consider ticket "purchased" if any of these common fields are present
+    const hasPurchased = raw.some((t) => {
+      if (!t) return false;
+      if (t.payment || t.payments) return true;
+      if (t.paid === true) return true;
+      if (t.user) return true;
+      // availability semantics: true => available, false => sold
+      if (t.available === false || t.availability === false) return true;
+      if (t.sold === true) return true;
+      return false;
+    });
+
+    setDeleteWillCancel(hasPurchased);
     setShowDeleteModal(true);
   };
 
@@ -795,8 +814,14 @@ export default function EventList() {
 
       <Modal
         open={showDeleteModal}
-        title="Delete Event"
-        message={deleteTarget ? `Delete "${deleteTarget.event_name}"?` : ""}
+        title={deleteWillCancel ? "Cancel Event" : "Delete Event"}
+        message={
+          deleteTarget
+            ? deleteWillCancel
+              ? `This event has purchased tickets — deleting will CANCEL the event and attempt refunds for buyers. Proceed?`
+              : `Delete "${deleteTarget.event_name}"? This will permanently remove the event.`
+            : ""
+        }
         showCancel={true}
         confirmText={
           deleting ? (
