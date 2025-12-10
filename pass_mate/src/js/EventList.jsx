@@ -51,6 +51,7 @@ export default function EventList() {
   const [openBreakdownId, setOpenBreakdownId] = useState(null);
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [deleteWillCancel, setDeleteWillCancel] = useState(false);
   // default changed to NON_CANCELLED so CANCELLED events are hidden by default
   const [eventFilter, setEventFilter] = useState("NON_CANCELLED");
 
@@ -196,43 +197,64 @@ export default function EventList() {
     navigate(`/edit-event/${event.id}`, { state: { event } });
   };
 
+  // confirmDelete now inspects ticketsByEvent to determine whether deletion will actually be a cancel
   const confirmDelete = (event) => {
     setDeleteTarget(event);
+
+    const tb = ticketsByEvent[Number(event.id)] ?? { raw: [] };
+    const raw = tb.raw ?? [];
+
+    // heuristics: consider ticket "purchased" if any of these common fields are present
+    const hasPurchased = raw.some((t) => {
+      if (!t) return false;
+      if (t.payment || t.payments) return true;
+      if (t.paid === true) return true;
+      if (t.user) return true;
+      // availability semantics: true => available, false => sold
+      if (t.available === false || t.availability === false) return true;
+      if (t.sold === true) return true;
+      return false;
+    });
+
+    setDeleteWillCancel(hasPurchased);
     setShowDeleteModal(true);
   };
 
   const ticketGetId = (ticket) =>
     ticket.ticketId ?? ticket.id ?? ticket.ticket_id ?? ticket._id;
 
-const deleteEvent = async () => {
-  if (!deleteTarget) return;
+  const deleteEvent = async () => {
+    if (!deleteTarget) return;
 
-  setDeleting(true);  // <-- START loading
+    setDeleting(true);
 
-  try {
-    const res = await axios.delete(
-      `http://localhost:8080/api/events/delete/${deleteTarget.id}`,
-      { withCredentials: true }
-    );
+    try {
+      const res = await axios.delete(
+        `http://localhost:8080/api/events/delete/${deleteTarget.id}`,
+        { withCredentials: true }
+      );
 
-    const msg = res?.data ?? "Event cancelled";
+      // prefer structured response { message: "..." } but fall back
+      const msg = res?.data?.message ?? (typeof res?.data === "string" ? res.data : "Event update complete.");
+      // show backend message to user
+     
 
-    // remove from UI
-    setLocalEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
-    setShowDeleteModal(false);
-    setDeleteTarget(null);
-    setOpenBreakdownId((prev) => (prev === deleteTarget.id ? null : prev));
-  } catch (err) {
-    const serverMsg =
-      err?.response?.data
-        ? (typeof err.response.data === "string" ? err.response.data : JSON.stringify(err.response.data))
-        : err.message;
-
-    alert("Error deleting event: " + serverMsg);
-  } finally {
-    setDeleting(false); // <-- END loading
-  }
-};
+      // Update UI:
+      // If you prefer to leave cancelled events visible, replace the filter below with a local status update.
+      setLocalEvents((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+      setShowDeleteModal(false);
+      setDeleteTarget(null);
+      setOpenBreakdownId((prev) => (prev === deleteTarget.id ? null : prev));
+    } catch (err) {
+      const serverMsg =
+        err?.response?.data
+          ? (typeof err.response.data === "string" ? err.response.data : JSON.stringify(err.response.data))
+          : err.message;
+      alert("Error deleting event: " + serverMsg);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const toggleBreakdown = (eventId) => {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
@@ -567,16 +589,22 @@ const deleteEvent = async () => {
 
       <Modal
         open={showDeleteModal}
-        title="Delete Event"
-        message={deleteTarget ? `Delete "${deleteTarget.event_name}"?` : ""}
+        title={deleteWillCancel ? "Cancel Event" : "Delete Event"}
+        message={
+          deleteTarget
+            ? deleteWillCancel
+              ? `This event has purchased tickets — deleting will CANCEL the event and attempt refunds for buyers. Proceed?`
+              : `Delete "${deleteTarget.event_name}"? This will permanently remove the event.`
+            : ""
+        }
         showCancel={true}
         confirmText={
-  deleting ? (
-    <span><span className="delete-loading-spinner" /> Deleting…</span>
-  ) : (
-    "Delete"
-  )
-}
+          deleting ? (
+            <span><span className="delete-loading-spinner" /> {deleteWillCancel ? "Cancelling…" : "Deleting…"}</span>
+          ) : (
+            deleteWillCancel ? "Cancel Event" : "Delete"
+          )
+        }
         cancelText="Cancel"
         onConfirm={deleting ? null : deleteEvent}
         onClose={() => setShowDeleteModal(false)}
