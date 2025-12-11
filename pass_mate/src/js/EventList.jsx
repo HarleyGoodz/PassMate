@@ -774,21 +774,42 @@ export default function EventList() {
                           </div>
                         </div>
 
-                        <div className="attendee-actions">
-                          <button
-                            className="btn-approve"
-                            onClick={() => approve(paymentId)}
-                          >
-                            Approve
-                          </button>
+                        {/* Determine event status */}
+                          {(() => {
+                            const parentEvent = localEvents.find(e => e.id === attendeesModal.eventId);
 
-                          <button
-                            className="btn-decline"
-                            onClick={() => decline(paymentId)}
-                          >
-                            Decline
-                          </button>
-                        </div>
+                            const eventStatus = parentEvent
+                              ? getEventStatus(
+                                  parentEvent.event_date,
+                                  parentEvent.event_time_in,
+                                  parentEvent.event_time_out
+                                )
+                              : "AVAILABLE";
+
+                            // If event is finished → hide the buttons
+                            if (eventStatus === "FINISHED") {
+                              return null;
+                            }
+
+                            // Otherwise show them normally
+                            return (
+                              <div className="attendee-actions">
+                                <button
+                                  className="btn-approve"
+                                  onClick={() => approve(paymentId)}
+                                >
+                                  Approve
+                                </button>
+
+                                <button
+                                  className="btn-decline"
+                                  onClick={() => decline(paymentId)}
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            );
+                          })()}
                       </div>
                     );
                   })}
