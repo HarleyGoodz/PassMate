@@ -279,7 +279,7 @@ export default function EventList() {
       return false;
     });
 
-    setDeleteWillCancel(hasPurchased);
+    
     setShowDeleteModal(true);
   };
 
