@@ -132,10 +132,7 @@ export default function EventList() {
     const map = {};
     ticketsArr.forEach((t) => {
       const eid =
-        t.event?.eventId ??
-        t.event?.id ??
-        t.eventId ??
-        t.event_id;
+        t.event?.eventId ?? t.event?.id ?? t.eventId ?? t.event_id;
 
       if (eid == null) return;
 
@@ -540,9 +537,7 @@ export default function EventList() {
                     onClick={() => toggleBreakdown(event.id)}
                     aria-expanded={openBreakdownId === event.id}
                   >
-                    {openBreakdownId === event.id
-                      ? "Hide breakdown"
-                      : "View breakdown"}
+                    {openBreakdownId === event.id ? "Hide breakdown" : "View breakdown"}
                     <span className="ticket-count" style={{ marginLeft: 8 }}>
                       {totalCount}
                     </span>
@@ -600,9 +595,7 @@ export default function EventList() {
                               t.ticketPrice ?? t.ticket_price ?? t.price ?? 0
                             );
                             const availability =
-                              t.available || t.availability
-                                ? "Available"
-                                : "Sold";
+                              t.available || t.availability ? "Available" : "Sold";
 
                             return (
                               <div key={id} className="ticket-row">
@@ -627,9 +620,7 @@ export default function EventList() {
                         onClick={() => {
                           if (status !== "STARTING") handleEdit(event);
                         }}
-                        disabled={
-                          status === "STARTING" || status === "CANCELLED"
-                        }
+                        disabled={status === "STARTING" || status === "CANCELLED"}
                       >
                         ✏ Edit
                       </button>
@@ -640,9 +631,7 @@ export default function EventList() {
                           if (status !== "STARTING" && status !== "CANCELLED")
                             confirmDelete(event);
                         }}
-                        disabled={
-                          status === "STARTING" || status === "CANCELLED"
-                        }
+                        disabled={status === "STARTING" || status === "CANCELLED"}
                       >
                         🗑
                       </button>
@@ -655,25 +644,70 @@ export default function EventList() {
         )}
       </div>
 
-      {/* Attendees Modal */}
+      {/* Attendees Modal (orange themed, hides approve/decline when event is FINISHED) */}
       {attendeesModal.show && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <div className="modal-panel">
-            <div className="modal-header-row">
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          style={{
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            backdropFilter: "blur(2px)",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            className="modal-panel"
+            style={{
+              width: "520px",
+              maxHeight: "85vh",
+              background: "#fff",
+              borderRadius: "18px",
+              padding: "22px",
+              boxShadow: "0 10px 35px rgba(0,0,0,0.35)",
+              borderTop: "6px solid #fb8c00",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* HEADER */}
+            <div
+              className="modal-header-row"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 10,
+              }}
+            >
               <div>
-                <h2>Attendees</h2>
-                <div className="modal-subtitle">
-                  Event ID: {attendeesModal.eventId} ·{" "}
+                <h2 style={{ margin: 0, color: "#fb8c00" }}>Attendees</h2>
+                <div
+                  className="modal-subtitle"
+                  style={{ color: "#555", fontSize: "14px", marginTop: 4 }}
+                >
+                  Event ID: {attendeesModal.eventId} •{" "}
                   <strong>{attendeesModal.list.length}</strong> attendees
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   className="secondary-btn"
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "8px",
+                    background: "#ffe0b2",
+                    border: "1px solid #ffb74d",
+                    color: "#c66a00",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
                   onClick={() => {
-                    if (attendeesModal.eventId)
-                      openAttendees(attendeesModal.eventId);
+                    if (attendeesModal.eventId) openAttendees(attendeesModal.eventId);
                   }}
                 >
                   Refresh
@@ -681,6 +715,15 @@ export default function EventList() {
 
                 <button
                   className="close-btn"
+                  style={{
+                    background: "#ff7043",
+                    border: "none",
+                    color: "white",
+                    padding: "6px 12px",
+                    fontWeight: "700",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                  }}
                   onClick={() =>
                     setAttendeesModal((prev) => ({ ...prev, show: false }))
                   }
@@ -690,155 +733,193 @@ export default function EventList() {
               </div>
             </div>
 
-            <div style={{ height: 12 }} />
-
-            {/* 🔍 ATTENDEE SEARCH BAR */}
+            {/* SEARCH INPUT */}
             <input
               type="text"
-              placeholder="Search attendee by Gmail or Username..."
+              placeholder="Search attendee..."
               className="attendee-search-input"
               value={attendeeSearch}
               onChange={(e) => setAttendeeSearch(e.target.value)}
               style={{
                 width: "100%",
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid #ccc",
-                marginBottom: "12px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1px solid #ffb74d",
+                marginBottom: "15px",
                 fontSize: "14px",
+                outlineColor: "#fb8c00",
               }}
             />
 
-            {attendeesModal.list.length === 0 ? (
-              <p style={{ marginTop: 10 }}>
-                No attendees yet for this event.
-              </p>
-            ) : (
-              <div className="attendees-scroll" aria-live="polite">
-                {attendeesModal.list
+            {/* CONTENT SCROLL AREA */}
+            <div
+              className="attendees-scroll"
+              aria-live="polite"
+              style={{
+                overflowY: "auto",
+                paddingRight: 6,
+                maxHeight: "65vh",
+              }}
+            >
+              {attendeesModal.list.length === 0 ? (
+                <p style={{ marginTop: 10, textAlign: "center", color: "#777" }}>
+                  No attendees yet.
+                </p>
+              ) : (
+                attendeesModal.list
                   .filter((a) => {
-                    const email =
-                      (a.user?.emailAddress ??
-                        a.user?.email ??
-                        "").toLowerCase();
-
-                    const fullname =
-                      (a.user?.fullname ??
-                        a.user?.name ??
-                        "").toLowerCase();
-
                     const q = attendeeSearch.toLowerCase();
-
+                    const email = (a.user?.emailAddress ?? a.user?.email ?? "").toLowerCase();
+                    const fullname = (a.user?.fullname ?? a.user?.name ?? "").toLowerCase();
                     return email.includes(q) || fullname.includes(q);
                   })
                   .map((a, idx) => {
-                    const paymentId = a.paymentId ?? a.id ?? idx;
-                    const status = (
-                      a.attendee_status ?? "NONE"
-                    ).toString();
+                    const paymentId = a.paymentId ?? idx;
+                    const status = (a.attendee_status ?? "NONE").toUpperCase();
+                    const fullname = a.user?.fullname ?? a.user?.name ?? "Anonymous";
+                    const email = a.user?.emailAddress ?? a.user?.email ?? "—";
 
-                    const email =
-                      a.user?.emailAddress ??
-                      a.user?.email ??
-                      "—";
-                    const fullname =
-                      a.user?.fullname ??
-                      a.user?.name ??
-                      "Anonymous";
+                    // Find parent event and determine its status (FINISHED / STARTING / AVAILABLE)
+                    const parentEvent = localEvents.find((e) => e.id === attendeesModal.eventId);
+                    const eventStatus = parentEvent
+                      ? getEventStatus(
+                          parentEvent.event_date,
+                          parentEvent.event_time_in,
+                          parentEvent.event_time_out
+                        )
+                      : "AVAILABLE";
 
                     return (
-                      <div key={paymentId} className="attendee-card">
-                        <div className="attendee-top">
-                          <div className="attendee-left">
-                            <div className="attendee-name">
+                      <div
+                        key={paymentId}
+                        className="attendee-card"
+                        style={{
+                          background: "#fff7ec",
+                          border: "1px solid #ffe0b2",
+                          padding: "14px",
+                          borderRadius: "12px",
+                          marginBottom: "12px",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+                        }}
+                      >
+                        <div
+                          className="attendee-top"
+                          style={{ display: "flex", justifyContent: "space-between" }}
+                        >
+                          <div>
+                            <div className="attendee-name" style={{ fontSize: 16, fontWeight: 700 }}>
                               {fullname}
                             </div>
-                            <div className="attendee-email">
+                            <div className="attendee-email" style={{ fontSize: 13, color: "#777" }}>
                               {email}
                             </div>
                           </div>
 
-                          <div className="attendee-right">
-                            <div
-                              className={`attendee-status badge-${status.toLowerCase()}`}
+                          <div
+                            className={`attendee-status badge-${status.toLowerCase()}`}
+                            style={{
+                              background:
+                                status === "APPROVED"
+                                  ? "#81c784"
+                                  : status === "DECLINED"
+                                  ? "#e57373"
+                                  : "#ffcc80",
+                              padding: "4px 10px",
+                              borderRadius: "6px",
+                              fontWeight: 700,
+                              fontSize: 12,
+                              color: "#222",
+                              height: "fit-content",
+                            }}
+                          >
+                            {status}
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: 8, fontSize: 13 }}>
+                          <strong>Payment ID:</strong> {paymentId}
+                        </div>
+
+                        {/* Buttons (hidden if event finished) */}
+                        {eventStatus !== "FINISHED" ? (
+                          <div
+                            className="attendee-actions"
+                            style={{
+                              marginTop: 12,
+                              display: "flex",
+                              gap: 10,
+                            }}
+                          >
+                            <button
+                              className="btn-approve"
+                              style={{
+                                flex: 1,
+                                background: "#66bb6a",
+                                padding: "8px 12px",
+                                borderRadius: "8px",
+                                border: "none",
+                                color: "white",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                              onClick={() => approve(paymentId)}
                             >
-                              {status.replace(/_/g, " ")}
-                            </div>
+                              Approve
+                            </button>
+
+                            <button
+                              className="btn-decline"
+                              style={{
+                                flex: 1,
+                                background: "#e57373",
+                                padding: "8px 12px",
+                                borderRadius: "8px",
+                                border: "none",
+                                color: "white",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                              onClick={() => decline(paymentId)}
+                            >
+                              Decline
+                            </button>
                           </div>
-                        </div>
-
-                        <div className="attendee-meta">
-                          <div>
-                            <strong>Payment ID:</strong>{" "}
-                            {paymentId}
+                        ) : (
+                          <div style={{ marginTop: 12, color: "#555", fontSize: 13 }}>
+                            Event finished — attendee actions are disabled.
                           </div>
-                        </div>
-
-                        {/* Determine event status */}
-                          {(() => {
-                            const parentEvent = localEvents.find(e => e.id === attendeesModal.eventId);
-
-                            const eventStatus = parentEvent
-                              ? getEventStatus(
-                                  parentEvent.event_date,
-                                  parentEvent.event_time_in,
-                                  parentEvent.event_time_out
-                                )
-                              : "AVAILABLE";
-
-                            // If event is finished → hide the buttons
-                            if (eventStatus === "FINISHED") {
-                              return null;
-                            }
-
-                            // Otherwise show them normally
-                            return (
-                              <div className="attendee-actions">
-                                <button
-                                  className="btn-approve"
-                                  onClick={() => approve(paymentId)}
-                                >
-                                  Approve
-                                </button>
-
-                                <button
-                                  className="btn-decline"
-                                  onClick={() => decline(paymentId)}
-                                >
-                                  Decline
-                                </button>
-                              </div>
-                            );
-                          })()}
+                        )}
                       </div>
                     );
-                  })}
-              </div>
-            )}
+                  })
+              )}
+            </div>
           </div>
         </div>
       )}
 
       <Modal
-        open={showDeleteModal}
-        title="Delete Event"
-        message={
-          deleteTarget ? `Delete "${deleteTarget.event_name}"?` : ""
-        }
-        showCancel={true}
-        confirmText={
-          deleting ? (
-            <span>
-              <span className="delete-loading-spinner" /> Deleting…
-            </span>
-          ) : (
-            "Delete"
-          )
-        }
-        cancelText="Cancel"
-        onConfirm={deleting ? null : deleteEvent}
-        onClose={() => setShowDeleteModal(false)}
-      />
+  open={showDeleteModal}
+  title="Delete Event"
+  headerClass="modal-orange-header"   // 🔥 FULL ORANGE HEADER
+  panelClass="modal-orange-panel"
+  confirmClass="modal-orange-confirm"
+  cancelClass="modal-orange-cancel"
+  message={
+      deleteTarget ? `
+        Are you sure you want to delete 
+        <strong style="color:#d84315">"${deleteTarget.event_name}"</strong>?
+        <br><br>
+        <span style="color:red; font-weight:bold;">Note: This action cannot be undone.</span>
+      ` : ""
+  }
+  html={true}    // 🔥 REQUIRED to render HTML markup
+  showCancel={true}
+  confirmText={ deleting ? "Deleting…" : "Delete" }
+  cancelText="Cancel"
+  onConfirm={deleting ? null : deleteEvent}
+  onClose={() => setShowDeleteModal(false)}
+/>
     </div>
   );
 }

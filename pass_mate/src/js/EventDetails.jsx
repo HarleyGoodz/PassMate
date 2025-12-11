@@ -25,6 +25,7 @@ export default function EventDetails() {
   const [soldOut, setSoldOut] = useState(false);
   const [userHasTicket, setUserHasTicket] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userRefundedTicket, setUserRefundedTicket] = useState(false);
 
   const [, setTickets] = useState([]);
   const [regularInfo, setRegularInfo] = useState({ count: 0, available: 0, price: null, id: null });
@@ -206,6 +207,26 @@ export default function EventDetails() {
     }
   }
 
+  async function fetchRefundStatus(currentUser, currentEvent) {
+  if (!currentUser || !currentEvent) return;
+  try {
+    const res = await fetch(
+      `http://localhost:8080/api/ticket/refunded?userId=${currentUser.userId}&eventId=${currentEvent.id}`,
+      { credentials: "include" }
+    );
+
+    if (!res.ok) {
+      setUserRefundedTicket(false);
+      return;
+    }
+
+    const body = await res.json();
+    setUserRefundedTicket(Boolean(body.refunded ?? body));
+  } catch {
+    setUserRefundedTicket(false);
+  }
+}
+
   async function refreshAll() {
     const e = await fetchEvent();
     await fetchTickets(e);
@@ -233,7 +254,10 @@ export default function EventDetails() {
     if (!event) return;
     async function run() {
       await fetchTickets(event);
-      if (user) await fetchOwnership(user, event);
+      if (user) {
+  await fetchOwnership(user, event);
+  await fetchRefundStatus(user, event);   // ONLY RUN WHEN USER EXISTS
+}
     }
     run();
   }, [event, user]);
@@ -401,6 +425,11 @@ export default function EventDetails() {
                 <Link to="/login" className="buy-btn">Login to Buy</Link>
               ) : soldOut || regularInfo.available <= 0 ? (
                 <button className="buy-btn disabled" disabled>SOLD OUT</button>
+
+                ) : userRefundedTicket ? (
+  <button className="buy-btn disabled" disabled>
+    You refunded this ticket and cannot repurchase it
+  </button>
               ) : userHasTicket ? (
                 <button className="buy-btn disabled" disabled>You already bought this</button>
               ) : (
@@ -433,6 +462,10 @@ export default function EventDetails() {
                 <Link to="/login" className="buy-btn">Login to Buy</Link>
               ) : soldOut || vipInfo.available <= 0 ? (
                 <button className="buy-btn disabled" disabled>SOLD OUT</button>
+                ) : userRefundedTicket ? (
+  <button className="buy-btn disabled" disabled>
+    You refunded this ticket and cannot repurchase it
+  </button>
               ) : userHasTicket ? (
                 <button className="buy-btn disabled" disabled>You already bought this</button>
               ) : (

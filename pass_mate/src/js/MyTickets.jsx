@@ -254,7 +254,7 @@ export default function MyTickets() {
     setModal({
       show: true,
       title: "Request Refund",
-      message: "Request a refund for this ticket?",
+      message: "Request a refund for this ticket?\nNote: You will not be able to purchase it again.",
       onConfirm: () => performRefund(paymentId),
       loading: false
     });
@@ -482,6 +482,9 @@ export default function MyTickets() {
 
                   if (t.attendee_status === "DECLINED") {
                     banner = { style: bannerStyle("#b71c1c"), text: "TICKET DECLINED!" };
+                  }
+                  else if (t.attendee_status === "APPROVED" && started) {
+                    banner = { style: bannerStyle("#fb8c00"), text: "VERIFIED AND STARTING" }; // SAME COLOR AS EVENT STARTED
                   }
                   else if (t.attendee_status === "APPROVED" && !finished) {
                     banner = { style: bannerStyle("#2e7d32"), text: "TICKET VERIFIED!" };
