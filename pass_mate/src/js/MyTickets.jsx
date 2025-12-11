@@ -19,6 +19,10 @@ export default function MyTickets() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
+
+  // ⭐ NEW TOAST STATE
+  const [toast, setToast] = useState(null);
+
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
@@ -210,7 +214,7 @@ export default function MyTickets() {
   };
 
   // -------------------------------------------------------------------
-  // FILTERED TICKETS (must be ABOVE return() to avoid ESLint errors)
+  // FILTERED TICKETS
   // -------------------------------------------------------------------
   const applyTicketFilter = (list) => {
     if (ticketFilter === "ALL") return list;
@@ -244,7 +248,7 @@ export default function MyTickets() {
   );
 
   // -------------------------------------------------------------------
-  // REFUND + MODAL HANDLERS (must be ABOVE render)
+  // REFUND + MODAL HANDLERS
   // -------------------------------------------------------------------
   function handleRequestRefund(paymentId) {
     setModal({
@@ -294,7 +298,14 @@ export default function MyTickets() {
         })
       );
 
-      setMessages([{ text: didRefundNow ? "Refund processed." : "Refund requested.", type: "success" }]);
+      // ⭐ NEW TOAST REPLACE SUCCESS MESSAGE
+      if (didRefundNow) {
+        setToast("Refund Processed");
+        setTimeout(() => setToast(null), 5000);
+      } else {
+        setMessages([{ text: "Refund requested.", type: "success" }]);
+      }
+
     } catch (err) {
       console.error("refund error", err);
       setMessages([{ text: "Failed to request refund. Try again.", type: "error" }]);
@@ -382,6 +393,29 @@ export default function MyTickets() {
 
   return (
     <div className="ticket-page">
+
+      {/* ⭐ NEW TOAST UI */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: "25px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "linear-gradient(135deg, #22c55e, #16a34a)",
+            padding: "12px 26px",
+            color: "white",
+            fontWeight: "800",
+            borderRadius: "10px",
+            zIndex: 99999,
+            boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
+            animation: "fadeInDown 0.3s ease-out",
+          }}
+        >
+          {toast}
+        </div>
+      )}
+
       <div className="tickets-header">
         <Link to="/home" className="btn-back-home">Back to home</Link>
         <h1 className="tickets-title">My Tickets</h1>
@@ -446,9 +480,6 @@ export default function MyTickets() {
                     banner = { style: bannerStyle("#fb8c00"), text: "EVENT STARTED" };
                   }
 
-                  // -------------------------------------------
-                  // YOUR ATTENDEE STATUS BANNER (correct location)
-                  // -------------------------------------------
                   if (t.attendee_status === "DECLINED") {
                     banner = { style: bannerStyle("#b71c1c"), text: "TICKET DECLINED!" };
                   }

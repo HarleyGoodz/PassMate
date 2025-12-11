@@ -13,6 +13,14 @@
   flex-direction: column;
 }
 
+/* Smaller refund alert box */
+.alert.refund-message {
+  padding: 8px 14px !important;
+  font-size: 12px !important;
+  border-radius: 10px !important;
+}
+
+
 .btn-delete-only {
   background-color: #e53935;
   color: #fff;
