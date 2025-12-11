@@ -21,7 +21,7 @@ const formatTo12Hour = (time) => {
   return `${hour}:${minute}${ampm}`;
 };
 
-// Helper: Determine Event Status
+// Event status
 const getEventStatus = (event_date, time_in, time_out) => {
   if (!event_date || !time_in || !time_out) return "AVAILABLE";
 
@@ -53,11 +53,12 @@ export default function EventList() {
   const [openBreakdownId, setOpenBreakdownId] = useState(null);
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const [deleteWillCancel, setDeleteWillCancel] = useState(false);
-  // default changed to NON_CANCELLED so CANCELLED events are hidden by default
+
   const [eventFilter, setEventFilter] = useState("NON_CANCELLED");
 
-  // Attendees modal: list attendees for a single event
+  // 🔥 REQUIRED FOR SEARCH BAR (you forgot this)
+  const [attendeeSearch, setAttendeeSearch] = useState("");
+
   const [attendeesModal, setAttendeesModal] = useState({
     show: false,
     eventId: null,
@@ -78,11 +79,21 @@ export default function EventList() {
 
       const list = Array.isArray(res.data) ? res.data : [];
 
+      const normalized = list.map((a) => ({
+        ...a,
+        user: a.user ?? a.customer ?? {},
+        paymentId: a.paymentId ?? a.id ?? a.payment_id,
+        attendee_status:
+          a.attendee_status ?? a.status ?? (a.approved ? "APPROVED" : "NONE"),
+      }));
+
       setAttendeesModal({
         show: true,
         eventId,
-        list,
+        list: normalized,
       });
+
+      setAttendeeSearch(""); // reset search
     } catch (err) {
       console.error("Failed to fetch attendees", err);
       alert("Failed to load attendees for this event.");
@@ -97,13 +108,8 @@ export default function EventList() {
         {},
         { withCredentials: true }
       );
-
-      // reload current attendees
-      if (attendeesModal.eventId) {
-        openAttendees(attendeesModal.eventId);
-      }
-    } catch (err) {
-      console.error("Failed to approve attendee", err);
+      if (attendeesModal.eventId) openAttendees(attendeesModal.eventId);
+    } catch {
       alert("Failed to approve attendee.");
     }
   };
@@ -116,13 +122,8 @@ export default function EventList() {
         {},
         { withCredentials: true }
       );
-
-      // reload current attendees
-      if (attendeesModal.eventId) {
-        openAttendees(attendeesModal.eventId);
-      }
-    } catch (err) {
-      console.error("Failed to decline attendee", err);
+      if (attendeesModal.eventId) openAttendees(attendeesModal.eventId);
+    } catch {
       alert("Failed to decline attendee.");
     }
   };
@@ -167,7 +168,6 @@ export default function EventList() {
     ticket_limit: srv.ticketLimit ?? srv.ticket_limit ?? 0,
     event_description: srv.eventDescription ?? srv.event_description ?? "",
     serverUser: srv.user ?? srv.createdBy ?? null,
-    // expose raw status coming from backend so we can filter CANCELLED explicitly
     event_status: (srv.eventStatus ?? srv.event_status ?? "").toString(),
     ticket_price_vip: null,
     ticket_price_standard: null,
@@ -207,44 +207,32 @@ export default function EventList() {
           const reg = tb.regular[0] ?? tb.raw[0];
           const vip = tb.vip[0];
 
-          base.ticket_price_standard = reg
-            ? reg.ticketPrice ?? reg.ticket_price ?? reg.price ?? 0
-            : 0;
+          base.ticket_price_standard =
+            reg?.ticketPrice ?? reg?.ticket_price ?? reg?.price ?? 0;
 
-          base.ticket_price_vip = vip
-            ? vip.ticketPrice ?? vip.ticket_price ?? vip.price ?? 0
-            : 0;
+          base.ticket_price_vip =
+            vip?.ticketPrice ?? vip?.ticket_price ?? vip?.price ?? 0;
         }
 
         return base;
       });
 
-      // filter to events that belong to this user
+      const full = (localStorage.getItem("userFullname") || "").toLowerCase();
+      const email = (localStorage.getItem("userEmail") || "").toLowerCase();
+
       const mine = mapped.filter((e) => {
-        if (
-          e.serverUser &&
-          typeof e.serverUser === "object" &&
-          e.serverUser.userId
-        ) {
+        if (e.serverUser?.userId) {
           return Number(e.serverUser.userId) === userId;
         }
-
-        const full = (localStorage.getItem("userFullname") || "").toLowerCase();
-        const email = (localStorage.getItem("userEmail") || "").toLowerCase();
-
         if (typeof e.serverUser === "string") {
           const str = e.serverUser.toLowerCase();
-          if (full && str.includes(full)) return true;
-          if (email && str.includes(email)) return true;
+          return str.includes(full) || str.includes(email);
         }
-
         return false;
       });
 
       setLocalEvents(mine);
-      setError(null);
     } catch (err) {
-      console.error("Failed to fetch events or tickets:", err);
       setError(err.response?.data || err.message);
     } finally {
       setLoading(false);
@@ -253,7 +241,6 @@ export default function EventList() {
 
   useEffect(() => {
     fetchEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -264,14 +251,12 @@ export default function EventList() {
     ) {
       fetchEvents();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   useEffect(() => {
     const onFocus = () => fetchEvents();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleEdit = (event) => {
@@ -307,36 +292,24 @@ export default function EventList() {
   const deleteEvent = async () => {
     if (!deleteTarget) return;
 
-    setDeleting(true); // <-- START loading
+    setDeleting(true);
 
     try {
-      const res = await axios.delete(
+      await axios.delete(
         `http://localhost:8080/api/events/delete/${deleteTarget.id}`,
         { withCredentials: true }
       );
 
-      const msg = res?.data ?? "Event cancelled";
-      console.log(msg);
-
-      // remove from UI
       setLocalEvents((prev) =>
         prev.filter((e) => e.id !== deleteTarget.id)
       );
       setShowDeleteModal(false);
       setDeleteTarget(null);
-      setOpenBreakdownId((prev) =>
-        prev === deleteTarget.id ? null : prev
-      );
+      setOpenBreakdownId(null);
     } catch (err) {
-      const serverMsg = err?.response?.data
-        ? typeof err.response.data === "string"
-          ? err.response.data
-          : JSON.stringify(err.response.data)
-        : err.message;
-
-      alert("Error deleting event: " + serverMsg);
+      alert("Error deleting event.");
     } finally {
-      setDeleting(false); // <-- END loading
+      setDeleting(false);
     }
   };
 
@@ -344,11 +317,9 @@ export default function EventList() {
     setOpenBreakdownId((prev) => (prev === eventId ? null : eventId));
   };
 
-  // FIXED: filter function that excludes explicit CANCELLED events
   const applyEventFilter = (events) => {
-    if (!eventFilter || eventFilter === "ALL") return events;
+    if (eventFilter === "ALL") return events;
 
-    // always allow explicit NON_CANCELLED filter
     if (eventFilter === "NON_CANCELLED") {
       return events.filter(
         (e) =>
@@ -356,7 +327,6 @@ export default function EventList() {
       );
     }
 
-    // show only cancelled when user asked for cancelled
     if (eventFilter === "CANCELLED") {
       return events.filter(
         (e) =>
@@ -364,19 +334,22 @@ export default function EventList() {
       );
     }
 
-    // For time-based filters (AVAILABLE / STARTING / FINISHED) exclude explicit CANCELLED events
     return events.filter((e) => {
-      const explicit = (e.event_status ?? "").toString().toUpperCase();
-      if (explicit === "CANCELLED") return false; // important: don't show cancelled in these buckets
+      const explicit = (e.event_status ?? "")
+        .toString()
+        .toUpperCase();
+      if (explicit === "CANCELLED") return false;
 
       const status = getEventStatus(
         e.event_date,
         e.event_time_in,
         e.event_time_out
       );
+
       if (eventFilter === "FINISHED") return status === "FINISHED";
       if (eventFilter === "STARTING") return status === "STARTING";
       if (eventFilter === "AVAILABLE") return status === "AVAILABLE";
+
       return true;
     });
   };
@@ -388,7 +361,6 @@ export default function EventList() {
     })
   );
 
-  // Banner Styles
   const statusStyles = {
     FINISHED: {
       backgroundColor: "#e53935",
@@ -433,12 +405,10 @@ export default function EventList() {
       <Link to="/home" className="eventlist-back">
         Back to home
       </Link>
+
       <h1 className="eventlist-title fade-in">Your Events</h1>
 
-      <div
-        className="search-bar-container fade-in"
-        style={{ marginBottom: "18px" }}
-      >
+      <div className="search-bar-container fade-in" style={{ marginBottom: "18px" }}>
         <input
           type="text"
           className="ticket-search-input"
@@ -448,49 +418,38 @@ export default function EventList() {
         />
       </div>
 
-      {/* FILTER BUTTONS - added below search */}
+      {/* FILTER BUTTONS */}
       <div className="filter-buttons" style={{ marginBottom: 30 }}>
         <button
-          className={`filter-btn ${
-            eventFilter === "ALL" ? "active-filter" : ""
-          }`}
+          className={`filter-btn ${eventFilter === "ALL" ? "active-filter" : ""}`}
           onClick={() => setEventFilter("ALL")}
         >
           All Events
         </button>
 
         <button
-          className={`filter-btn ${
-            eventFilter === "AVAILABLE" ? "active-filter" : ""
-          }`}
+          className={`filter-btn ${eventFilter === "AVAILABLE" ? "active-filter" : ""}`}
           onClick={() => setEventFilter("AVAILABLE")}
         >
           Available
         </button>
 
         <button
-          className={`filter-btn ${
-            eventFilter === "STARTING" ? "active-filter" : ""
-          }`}
+          className={`filter-btn ${eventFilter === "STARTING" ? "active-filter" : ""}`}
           onClick={() => setEventFilter("STARTING")}
         >
           Starting
         </button>
 
         <button
-          className={`filter-btn ${
-            eventFilter === "FINISHED" ? "active-filter" : ""
-          }`}
+          className={`filter-btn ${eventFilter === "FINISHED" ? "active-filter" : ""}`}
           onClick={() => setEventFilter("FINISHED")}
         >
           Finished
         </button>
 
-        {/* NEW: show cancelled events explicitly */}
         <button
-          className={`filter-btn ${
-            eventFilter === "CANCELLED" ? "active-filter" : ""
-          }`}
+          className={`filter-btn ${eventFilter === "CANCELLED" ? "active-filter" : ""}`}
           onClick={() => setEventFilter("CANCELLED")}
         >
           Cancelled
@@ -554,9 +513,7 @@ export default function EventList() {
 
                 <div className="card-header">
                   <h2 className="event-title">{event.event_name}</h2>
-                  <span className="event-category-badge">
-                    {event.event_category}
-                  </span>
+                  <span className="event-category-badge">{event.event_category}</span>
                 </div>
 
                 <div className="event-details-box">
@@ -581,20 +538,16 @@ export default function EventList() {
                       <span className="price-regular">
                         {formatPrice(event.ticket_price_standard)} Regular
                       </span>
-                      <span
-                        className="price-vip"
-                        style={{ marginLeft: 8 }}
-                      >
+                      <span className="price-vip" style={{ marginLeft: 8 }}>
                         {formatPrice(event.ticket_price_vip)} VIP
                       </span>
                     </span>
                   </div>
+
                   {event.event_description && (
                     <div className="detail-row description">
                       <span className="detail-label">📝 About</span>
-                      <span className="detail-value">
-                        {event.event_description}
-                      </span>
+                      <span className="detail-value">{event.event_description}</span>
                     </div>
                   )}
                 </div>
@@ -608,20 +561,20 @@ export default function EventList() {
                     {openBreakdownId === event.id
                       ? "Hide breakdown"
                       : "View breakdown"}
-                    <span
-                      className="ticket-count"
-                      style={{ pointerEvents: "none", marginLeft: 8 }}
-                    >
+                    <span className="ticket-count" style={{ marginLeft: 8 }}>
                       {totalCount}
                     </span>
                   </button>
 
                   <button
-                    className="view-breakdown-btn"
-                    style={{ marginTop: 10 }}
+                    className="view-breakdown-btn view-attendees-btn"
                     onClick={() => openAttendees(event.id)}
                   >
-                    View Attendees
+                    <span className="va-line1">View</span>
+                    <span className="va-line2">Attendees</span>
+                    <span className="ticket-count" style={{ marginLeft: 8 }}>
+                      {totalCount}
+                    </span>
                   </button>
                 </div>
 
@@ -636,15 +589,11 @@ export default function EventList() {
                       </div>
                       <div className="summary-item">
                         <span className="summary-label">Regular</span>
-                        <span className="summary-value regular">
-                          {regCount}
-                        </span>
+                        <span className="summary-value regular">{regCount}</span>
                       </div>
                       <div className="summary-item">
                         <span className="summary-label">VIP</span>
-                        <span className="summary-value vip">
-                          {vipCount}
-                        </span>
+                        <span className="summary-value vip">{vipCount}</span>
                       </div>
                     </div>
 
@@ -661,6 +610,7 @@ export default function EventList() {
                             <div className="ticket-cell">Price</div>
                             <div className="ticket-cell">Status</div>
                           </div>
+
                           {tb.raw.map((t) => {
                             const id = ticketGetId(t) ?? "(no id)";
                             const type = t.ticketType ?? t.type ?? "Unknown";
@@ -674,15 +624,9 @@ export default function EventList() {
 
                             return (
                               <div key={id} className="ticket-row">
-                                <div className="ticket-cell ticket-id">
-                                  {id}
-                                </div>
-                                <div className="ticket-cell ticket-type">
-                                  {type}
-                                </div>
-                                <div className="ticket-cell ticket-price">
-                                  {price}
-                                </div>
+                                <div className="ticket-cell ticket-id">{id}</div>
+                                <div className="ticket-cell ticket-type">{type}</div>
+                                <div className="ticket-cell ticket-price">{price}</div>
                                 <div
                                   className={`ticket-cell availability-${availability.toLowerCase()}`}
                                 >
@@ -704,18 +648,6 @@ export default function EventList() {
                         disabled={
                           status === "STARTING" || status === "CANCELLED"
                         }
-                        title={
-                          status === "STARTING"
-                            ? "Cannot edit while event is happening"
-                            : status === "CANCELLED"
-                            ? "Cannot edit a cancelled event"
-                            : "Edit Event"
-                        }
-                        style={
-                          status === "STARTING" || status === "CANCELLED"
-                            ? { opacity: 0.5, cursor: "not-allowed" }
-                            : {}
-                        }
                       >
                         ✏ Edit
                       </button>
@@ -723,26 +655,11 @@ export default function EventList() {
                       <button
                         className="icon-btn danger"
                         onClick={() => {
-                          if (
-                            status !== "STARTING" &&
-                            status !== "CANCELLED"
-                          )
+                          if (status !== "STARTING" && status !== "CANCELLED")
                             confirmDelete(event);
                         }}
                         disabled={
                           status === "STARTING" || status === "CANCELLED"
-                        }
-                        title={
-                          status === "STARTING"
-                            ? "Cannot delete an event that is currently happening"
-                            : status === "CANCELLED"
-                            ? "Event already cancelled"
-                            : "Delete event"
-                        }
-                        style={
-                          status === "STARTING" || status === "CANCELLED"
-                            ? { opacity: 0.5, cursor: "not-allowed" }
-                            : {}
                         }
                       >
                         🗑
@@ -758,55 +675,142 @@ export default function EventList() {
 
       {/* Attendees Modal */}
       {attendeesModal.show && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal-panel">
             <div className="modal-header-row">
-              <h2>Attendees</h2>
-              <button
-                className="close-btn"
-                onClick={() =>
-                  setAttendeesModal((prev) => ({ ...prev, show: false }))
-                }
-              >
-                ✕
-              </button>
+              <div>
+                <h2>Attendees</h2>
+                <div className="modal-subtitle">
+                  Event ID: {attendeesModal.eventId} ·{" "}
+                  <strong>{attendeesModal.list.length}</strong> attendees
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button
+                  className="secondary-btn"
+                  onClick={() => {
+                    if (attendeesModal.eventId)
+                      openAttendees(attendeesModal.eventId);
+                  }}
+                >
+                  Refresh
+                </button>
+
+                <button
+                  className="close-btn"
+                  onClick={() =>
+                    setAttendeesModal((prev) => ({ ...prev, show: false }))
+                  }
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {attendeesModal.list.length === 0 ? (
-              <p style={{ marginTop: 10 }}>No attendees yet for this event.</p>
-            ) : (
-              attendeesModal.list.map((a) => {
-                const paymentId = a.paymentId ?? a.id;
-                return (
-                  <div key={paymentId} className="attendee-row">
-                    <div>
-                      <strong>Gmail:</strong> {a.user?.emailAddress}
-                    </div>
-                    <div>
-                      <strong>Username:</strong> {a.user?.fullname}
-                    </div>
-                    <div>
-                      <strong>Status:</strong>{" "}
-                      {(a.attendee_status ?? "NONE").toString()}
-                    </div>
+            <div style={{ height: 12 }} />
 
-                    <div className="attendee-actions">
-                      <button
-                        className="btn-approve"
-                        onClick={() => approve(paymentId)}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="btn-decline"
-                        onClick={() => decline(paymentId)}
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
+            {/* 🔍 ATTENDEE SEARCH BAR */}
+            <input
+              type="text"
+              placeholder="Search attendee by Gmail or Username..."
+              className="attendee-search-input"
+              value={attendeeSearch}
+              onChange={(e) => setAttendeeSearch(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "1px solid #ccc",
+                marginBottom: "12px",
+                fontSize: "14px",
+              }}
+            />
+
+            {attendeesModal.list.length === 0 ? (
+              <p style={{ marginTop: 10 }}>
+                No attendees yet for this event.
+              </p>
+            ) : (
+              <div className="attendees-scroll" aria-live="polite">
+                {attendeesModal.list
+                  .filter((a) => {
+                    const email =
+                      (a.user?.emailAddress ??
+                        a.user?.email ??
+                        "").toLowerCase();
+
+                    const fullname =
+                      (a.user?.fullname ??
+                        a.user?.name ??
+                        "").toLowerCase();
+
+                    const q = attendeeSearch.toLowerCase();
+
+                    return email.includes(q) || fullname.includes(q);
+                  })
+                  .map((a, idx) => {
+                    const paymentId = a.paymentId ?? a.id ?? idx;
+                    const status = (
+                      a.attendee_status ?? "NONE"
+                    ).toString();
+
+                    const email =
+                      a.user?.emailAddress ??
+                      a.user?.email ??
+                      "—";
+                    const fullname =
+                      a.user?.fullname ??
+                      a.user?.name ??
+                      "Anonymous";
+
+                    return (
+                      <div key={paymentId} className="attendee-card">
+                        <div className="attendee-top">
+                          <div className="attendee-left">
+                            <div className="attendee-name">
+                              {fullname}
+                            </div>
+                            <div className="attendee-email">
+                              {email}
+                            </div>
+                          </div>
+
+                          <div className="attendee-right">
+                            <div
+                              className={`attendee-status badge-${status.toLowerCase()}`}
+                            >
+                              {status.replace(/_/g, " ")}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="attendee-meta">
+                          <div>
+                            <strong>Payment ID:</strong>{" "}
+                            {paymentId}
+                          </div>
+                        </div>
+
+                        <div className="attendee-actions">
+                          <button
+                            className="btn-approve"
+                            onClick={() => approve(paymentId)}
+                          >
+                            Approve
+                          </button>
+
+                          <button
+                            className="btn-decline"
+                            onClick={() => decline(paymentId)}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             )}
           </div>
         </div>
@@ -814,13 +818,9 @@ export default function EventList() {
 
       <Modal
         open={showDeleteModal}
-        title={deleteWillCancel ? "Cancel Event" : "Delete Event"}
+        title="Delete Event"
         message={
-          deleteTarget
-            ? deleteWillCancel
-              ? `This event has purchased tickets — deleting will CANCEL the event and attempt refunds for buyers. Proceed?`
-              : `Delete "${deleteTarget.event_name}"? This will permanently remove the event.`
-            : ""
+          deleteTarget ? `Delete "${deleteTarget.event_name}"?` : ""
         }
         showCancel={true}
         confirmText={
