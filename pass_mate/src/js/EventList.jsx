@@ -622,7 +622,8 @@ export default function EventList() {
                         }}
                         disabled={status === "STARTING" || status === "CANCELLED"}
                       >
-                        ✏ Edit
+                        ✏ Edit 
+                        
                       </button>
 
                       <button
