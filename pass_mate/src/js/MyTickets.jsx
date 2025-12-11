@@ -492,6 +492,7 @@ export default function MyTickets() {
 
                   const refundAllowed =
                     !finished &&
+                    !started && 
                     !cancelled &&
                     status !== "PENDING_REFUND" &&
                     status !== "REFUNDED" &&
