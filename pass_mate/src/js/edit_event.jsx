@@ -371,12 +371,26 @@ export default function EditEvent() {
       </form>
 
       <Modal
-        open={showSuccessModal}
-        title="Event Updated"
-        message="Your changes have been saved successfully."
-        confirmText="OK"
-        onConfirm={closeSuccessModal}
-      />
+  open={showSuccessModal}
+  title={
+  <span className="modal-orange-title" style={{ color: "#000" }}>
+    Event Updated
+  </span>
+}
+  message={
+  <div style={{ fontSize: "16px", lineHeight: "1.5" }}>
+    Your changes have been saved successfully.
+    <br /><br />
+    <strong style={{ color: "#ffae00ff" }}>This event is now updated.</strong>
+  </div>
+}
+  messageHtml={true}
+  confirmText="OK"
+  onConfirm={closeSuccessModal}
+  headerClass="modal-orange-header"
+  panelClass="modal-orange-panel"
+  confirmClass="modal-orange-confirm"
+/>
     </div>
   );
 }
