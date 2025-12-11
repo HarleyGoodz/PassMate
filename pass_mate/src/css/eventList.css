@@ -13,6 +13,168 @@
   position: relative;
 }
 
+/* ===========================
+   MODAL BACKDROP
+=========================== */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Backdrop fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===========================
+   MODAL PANEL
+=========================== */
+.modal-panel {
+  background: #ffffff;
+  width: 480px;
+  max-width: 90%;
+  max-height: 80vh;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.25s ease;
+}
+
+/* Panel slide animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===========================
+   HEADER ROW
+=========================== */
+.modal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header-row h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #444;
+  transition: 0.2s ease;
+}
+
+.close-btn:hover {
+  color: #e53935;
+}
+
+/* ===========================
+   ATTENDEE LIST
+=========================== */
+.attendee-row {
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 12px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  animation: fadeIn 0.25s ease;
+}
+
+/* Attendee actions */
+.attendee-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+}
+
+/* Approve button */
+.btn-approve {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn-approve:hover {
+  background: #43a047;
+}
+
+/* Decline button */
+.btn-decline {
+  background: #e53935;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.btn-decline:hover {
+  background: #c62828;
+}
+
+/* Scrollable modal content if many attendees */
+.modal-panel {
+  overflow-y: auto;
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+@media (max-width: 480px) {
+  .modal-panel {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .attendee-actions {
+    flex-direction: column;
+  }
+
+  .btn-approve,
+  .btn-decline {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+
 .delete-loading-spinner {
   width: 16px;
   height: 16px;

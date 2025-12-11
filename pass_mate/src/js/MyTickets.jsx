@@ -22,11 +22,10 @@ export default function MyTickets() {
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
-  const [ticketFilter, setTicketFilter] = useState("ALL"); // ALL / AVAILABLE / STARTED / FINISHED / PENDING_REFUND / REFUNDED / CANCELLED
+  const [ticketFilter, setTicketFilter] = useState("ALL");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsData, setDetailsData] = useState(null);
 
-  // Modal state (matches EventDetails style)
   const [modal, setModal] = useState({
     show: false,
     title: "",
@@ -72,6 +71,7 @@ export default function MyTickets() {
       return myPayments.map((p) => {
         const paymentId = p.id ?? p.paymentId ?? p.payment_id ?? null;
         const ticket = p.ticket ?? p.tickets ?? null;
+
         let ticketObj = null;
         if (ticket) {
           ticketObj = {
@@ -108,6 +108,7 @@ export default function MyTickets() {
           payment_status: paymentStatusRaw || null,
           payment_timestamp: p.payment_timestamp ?? p.paymentTimestamp ?? null,
           reference_code: p.reference_code ?? p.referenceCode ?? null,
+          attendee_status: p.attendee_status ?? p.attendeeStatus ?? "NONE",
           ticket: ticketObj,
           event,
           raw: p,
@@ -119,7 +120,7 @@ export default function MyTickets() {
   }
 
   // ----------------------
-  // lifecycle: load user + tickets
+  // LOAD USER + TICKETS
   // ----------------------
   useEffect(() => {
     let mounted = true;
@@ -208,52 +209,43 @@ export default function MyTickets() {
     }
   };
 
-  const detectEventSnapshotOnPayment = (paymentRaw) => {
-    if (!paymentRaw) return null;
-    const candidates = [
-      paymentRaw.eventSnapshot,
-      paymentRaw.event_snapshot,
-      paymentRaw.purchasedEventSnapshot,
-      paymentRaw.eventAtPurchase,
-      paymentRaw.event_at_purchase,
-      paymentRaw.snapshotEvent,
-      paymentRaw.eventSnapshotJson,
-      paymentRaw.event,
-    ];
-    for (const c of candidates) if (c && typeof c === "object") return c;
-    return null;
-  };
+  // -------------------------------------------------------------------
+  // FILTERED TICKETS (must be ABOVE return() to avoid ESLint errors)
+  // -------------------------------------------------------------------
+  const applyTicketFilter = (list) => {
+    if (ticketFilter === "ALL") return list;
 
-  const isEventModified = (payment) => {
-    const snapshot = detectEventSnapshotOnPayment(payment.raw);
-    if (!snapshot) return false;
-    const nowEv = payment.event?.rawEvent ?? payment.ticket?.rawTicket?.event ?? null;
-    if (!nowEv) return true;
-    const fieldsToCompare = [
-      ["eventName", "eventName"],
-      ["eventName", "event_name"],
-      ["eventVenue", "eventVenue"],
-      ["eventVenue", "event_venue"],
-      ["eventDescription", "eventDescription"],
-      ["eventDescription", "event_description"],
-      ["eventStartTime", "eventStartTime"],
-      ["eventStartTime", "event_start_time"],
-      ["eventEndTime", "eventEndTime"],
-      ["eventEndTime", "event_end_time"],
-    ];
-    for (const [keyA, keyB] of fieldsToCompare) {
-      const valSnapshot = snapshot[keyA] ?? snapshot[keyB] ?? null;
-      const valNow = nowEv[keyA] ?? nowEv[keyB] ?? null;
-      if (String(valSnapshot).trim() !== String(valNow).trim()) {
-        return true;
+    return list.filter((t) => {
+      const ev = t.event ?? t.ticket?.event ?? null;
+      const finished = isEventFinished(ev);
+      const started = !finished && isEventStarted(ev);
+      const s = (t.payment_status ?? "").toString().toUpperCase();
+
+      if (ticketFilter === "FINISHED") return finished;
+      if (ticketFilter === "STARTED") return started;
+      if (ticketFilter === "AVAILABLE") return !finished && !started && s !== "REFUNDED" && s !== "PENDING_REFUND";
+      if (ticketFilter === "PENDING_REFUND") return s === "PENDING_REFUND";
+      if (ticketFilter === "REFUNDED") return s === "REFUNDED";
+      if (ticketFilter === "CANCELLED") {
+        const evStatus = (ev?.event_status ?? "").toString().toUpperCase();
+        return !ev || evStatus === "CANCELLED";
       }
-    }
-    return false;
+      return true;
+    });
   };
 
-  // ----------------------
-  // Refund: open confirmation modal and perform refund
-  // ----------------------
+  const filteredTickets = applyTicketFilter(
+    tickets.filter((t) => {
+      const ev = t.event ?? t.ticket?.event ?? {};
+      const ticketType = deriveTicketType(t);
+      const text = `${ev?.event_name ?? ""} ${ev?.event_venue ?? ""} ${ticketType}`.toLowerCase();
+      return text.includes(search.toLowerCase());
+    })
+  );
+
+  // -------------------------------------------------------------------
+  // REFUND + MODAL HANDLERS (must be ABOVE render)
+  // -------------------------------------------------------------------
   function handleRequestRefund(paymentId) {
     setModal({
       show: true,
@@ -288,7 +280,10 @@ export default function MyTickets() {
       }
 
       const normalized = (text || "").toLowerCase();
-      const didRefundNow = normalized.includes("refunded") || normalized.includes("credited") || normalized.includes("wallet");
+      const didRefundNow =
+        normalized.includes("refunded") ||
+        normalized.includes("credited") ||
+        normalized.includes("wallet");
 
       setTickets((prev) =>
         prev.map((t) => {
@@ -299,7 +294,7 @@ export default function MyTickets() {
         })
       );
 
-      setMessages([{ text: didRefundNow ? "Refund processed and credited to your wallet." : "Refund requested. You will be notified about the refund status.", type: "success" }]);
+      setMessages([{ text: didRefundNow ? "Refund processed." : "Refund requested.", type: "success" }]);
     } catch (err) {
       console.error("refund error", err);
       setMessages([{ text: "Failed to request refund. Try again.", type: "error" }]);
@@ -309,48 +304,40 @@ export default function MyTickets() {
   }
 
   // ----------------------
-  // Derived UI filtering
-  // ----------------------
-  const applyTicketFilter = (list) => {
-    if (ticketFilter === "ALL") return list;
-
-    return list.filter((t) => {
-      const ev = t.event ?? t.ticket?.event ?? null;
-      const finished = isEventFinished(ev);
-      const started = !finished && isEventStarted(ev);
-      const s = (t.payment_status ?? "").toString().toUpperCase();
-
-      if (ticketFilter === "FINISHED") return finished;
-      if (ticketFilter === "STARTED") return started;
-      if (ticketFilter === "AVAILABLE") return !finished && !started && s !== "REFUNDED" && s !== "PENDING_REFUND";
-      if (ticketFilter === "PENDING_REFUND") return s === "PENDING_REFUND";
-      if (ticketFilter === "REFUNDED") return s === "REFUNDED";
-      if (ticketFilter === "CANCELLED") {
-        const evStatus = (ev?.event_status ?? "").toString().toUpperCase();
-        return !ev || evStatus === "CANCELLED";
-      }
-      return true;
-    });
-  };
-
-  const filteredTickets = applyTicketFilter(
-    tickets.filter((t) => {
-      const ev = t.event ?? t.ticket?.event ?? {};
-      const ticketType = deriveTicketType(t);
-      const text = `${ev?.event_name ?? ""} ${ev?.event_venue ?? ""} ${ticketType}`.toLowerCase();
-      return text.includes(search.toLowerCase());
-    })
-  );
-
-  // ----------------------
-  // small UI styles used inline
+  // RENDER
   // ----------------------
   const bannerStyle = (bg) => ({
-    backgroundColor: bg, color: "#fff", padding: "6px 10px", textAlign: "center", borderRadius: 6, marginBottom: 10, fontWeight: 700
+    backgroundColor: bg,
+    color: "#fff",
+    padding: "6px 10px",
+    textAlign: "center",
+    borderRadius: 6,
+    marginBottom: 10,
+    fontWeight: 700
   });
 
-  // Modal component (EventDetails style with orange confirm)
-  const Modal = ({ show, title, message, onClose, onConfirm, loading }) => {
+  const DetailsModal = ({ open, onClose, children, title = "Details" }) => {
+    useEffect(() => {
+      if (!open) return;
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }, [open]);
+    if (!open) return null;
+    return (
+      <div className="my-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="my-modal-panel" role="dialog" aria-modal="true" aria-label={title}>
+          <div className="my-modal-header">
+            <h3 style={{ color: "#222" }}>{title}</h3>
+            <button onClick={onClose} className="my-modal-close-btn">✕</button>
+          </div>
+          <div className="my-modal-content">{children}</div>
+        </div>
+      </div>
+    );
+  };
+
+  const ModalComponent = ({ show, title, message, onClose, onConfirm, loading }) => {
     if (!show) return null;
     return (
       <div style={{
@@ -391,29 +378,8 @@ export default function MyTickets() {
     );
   };
 
-  const DetailsModal = ({ open, onClose, children, title = "Details" }) => {
-    useEffect(() => {
-      if (!open) return;
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = prev; };
-    }, [open]);
-    if (!open) return null;
-    return (
-      <div className="my-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className="my-modal-panel" role="dialog" aria-modal="true" aria-label={title}>
-          <div className="my-modal-header"><h3 style={{ color: "#222" }}>{title}</h3><button onClick={onClose} className="my-modal-close-btn">✕</button></div>
-          <div className="my-modal-content">{children}</div>
-        </div>
-      </div>
-    );
-  };
-
   const openDetails = (t) => { setDetailsData(t); setDetailsOpen(true); };
 
-  // ----------------------
-  // render
-  // ----------------------
   return (
     <div className="ticket-page">
       <div className="tickets-header">
@@ -464,10 +430,8 @@ export default function MyTickets() {
                   const finished = isEventFinished(ev);
                   const started = !finished && isEventStarted(ev);
                   const cancelled = !ev || (ev.event_status && ev.event_status.toString().toUpperCase() === "CANCELLED");
-                  const modified = !cancelled && !finished && !started && isEventModified(t);
                   const status = (t.payment_status ?? "").toString().toUpperCase();
 
-                  // NEW: precedence: cancelled > refunded > pending_refund > finished/started/modified/available
                   let banner = { style: bannerStyle("#9e9e9e"), text: "TICKET AVAILABLE" };
 
                   if (cancelled) {
@@ -480,11 +444,28 @@ export default function MyTickets() {
                     banner = { style: bannerStyle("#e53935"), text: "EVENT FINISHED" };
                   } else if (started) {
                     banner = { style: bannerStyle("#fb8c00"), text: "EVENT STARTED" };
-                  } else if (modified) {
-                    banner = { style: bannerStyle("#2e7d32"), text: "EVENT MODIFIED" };
                   }
 
-                  const refundAllowed = !finished && !cancelled && status !== "PENDING_REFUND" && status !== "REFUNDED";
+                  // -------------------------------------------
+                  // YOUR ATTENDEE STATUS BANNER (correct location)
+                  // -------------------------------------------
+                  if (t.attendee_status === "DECLINED") {
+                    banner = { style: bannerStyle("#b71c1c"), text: "TICKET DECLINED!" };
+                  }
+                  else if (t.attendee_status === "APPROVED" && !finished) {
+                    banner = { style: bannerStyle("#2e7d32"), text: "TICKET VERIFIED!" };
+                  }
+                  else if (t.attendee_status === "APPROVED" && finished) {
+                    banner = { style: bannerStyle("#2e7d32"), text: "ENTRY SUCCESSFUL" };
+                  }
+
+                  const refundAllowed =
+                    !finished &&
+                    !cancelled &&
+                    status !== "PENDING_REFUND" &&
+                    status !== "REFUNDED" &&
+                    t.attendee_status !== "APPROVED" &&
+                    t.attendee_status !== "DECLINED";
 
                   return (
                     <div key={getPaymentId(t) ?? Math.random()} className="ticket-card-new">
@@ -565,8 +546,7 @@ export default function MyTickets() {
         )}
       </DetailsModal>
 
-      {/* Confirmation / message modal (EventDetails style) */}
-      <Modal
+      <ModalComponent
         show={modal.show}
         title={modal.title}
         message={modal.message}
