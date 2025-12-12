@@ -418,11 +418,6 @@ if (!event.event_description.trim()) {
           <input type="number" name="vip_limit" value={event.vip_limit} onChange={handleChange} />
         </div>
 
-        <div className="form-group">
-          <label>Ticket Limit (total)</label>
-          <input type="number" name="ticket_limit" value={event.ticket_limit} onChange={handleChange} />
-        </div>
-
         <div className="description">
           <label>Description</label>
           <textarea name="event_description" rows="4" value={event.event_description} onChange={handleChange} />
