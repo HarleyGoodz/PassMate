@@ -254,7 +254,7 @@ export default function MyTickets() {
     setModal({
       show: true,
       title: "Request Refund",
-      message: "Request a refund for this ticket?\nNote: You will not be able to purchase it again.",
+      message: "Request a refund for this ticket?",
       onConfirm: () => performRefund(paymentId),
       loading: false
     });
