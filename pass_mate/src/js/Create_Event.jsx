@@ -31,6 +31,61 @@ export default function CreateEvent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const regularLimit = Number(event.regular_limit) || 0;
+    const vipLimit = Number(event.vip_limit) || 0;
+    const regularPrice = Number(event.regular_price) || null;
+    const vipPrice = Number(event.vip_price) || null;
+
+    const totalLimit = regularLimit + vipLimit;
+
+    // ✅ Validate required fields
+const requiredFields = [
+  "event_name",
+  "event_date",
+  "event_time_in",
+  "event_time_out",
+  "event_venue",
+  "event_category",
+  "event_description",
+  "regular_price",
+  "vip_price",
+  "regular_limit",
+  "vip_limit",
+];
+
+for (const field of requiredFields) {
+  if (!event[field] || String(event[field]).trim() === "") {
+    alert("All fields must be filled!");
+    return;
+  }
+}
+
+// ✅ Ticket price validation
+if (regularPrice !== null && regularPrice <= 0) {
+  alert("Regular ticket price must be greater than 0.");
+  return;
+}
+
+if (vipPrice !== null && vipPrice <= 0) {
+  alert("VIP ticket price must be greater than 0.");
+  return;
+}
+
+// ✅ Ticket limit validation
+if (regularLimit <= 0) {
+  alert("Regular ticket limit must be greater than 0.");
+  return;
+}
+
+if (vipLimit <= 0) {
+  alert("VIP ticket limit must be greater than 0.");
+  return;
+}
+
+if (totalLimit <= 0) {
+  alert("Total ticket limit must be greater than 0.");
+  return;
+}
     if (!event.event_description.trim()) {
       alert("Description is required!");
       return;
@@ -79,12 +134,6 @@ export default function CreateEvent() {
         ? `${event.event_date}T${event.event_time_out}:00`
         : null;
 
-    const regularLimit = Number(event.regular_limit) || 0;
-    const vipLimit = Number(event.vip_limit) || 0;
-    const regularPrice = Number(event.regular_price) || null;
-    const vipPrice = Number(event.vip_price) || null;
-
-    const totalLimit = regularLimit + vipLimit;
 
     const eventPayload = {
       userId: userId,
