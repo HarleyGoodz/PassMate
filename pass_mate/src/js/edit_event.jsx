@@ -143,6 +143,74 @@ export default function EditEvent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // 1️⃣ All fields must be filled
+const requiredFields = [
+  "event_name",
+  "event_date",
+  "event_time_in",
+  "event_time_out",
+  "event_venue",
+  "event_category",
+  "event_description",
+  "regular_price",
+  "vip_price",
+  "regular_limit",
+  "vip_limit"
+];
+
+for (const field of requiredFields) {
+  if (!event[field] || String(event[field]).trim() === "") {
+    alert("All fields must be filled!");
+    return;
+  }
+}
+
+// 2️⃣ Convert numeric values
+const regularLimit = Number(event.regular_limit) || 0;
+const vipLimit = Number(event.vip_limit) || 0;
+const regularPrice = Number(event.regular_price) || 0;
+const vipPrice = Number(event.vip_price) || 0;
+const totalLimit = regularLimit + vipLimit;
+
+// 3️⃣ Validate prices
+if (regularPrice <= 0) {
+  alert("Regular ticket price must be greater than 0.");
+  return;
+}
+
+if (vipPrice <= 0) {
+  alert("VIP ticket price must be greater than 0.");
+  return;
+}
+
+// 4️⃣ Validate ticket limits
+if (regularLimit <= 0) {
+  alert("Regular ticket limit must be greater than 0.");
+  return;
+}
+
+if (vipLimit <= 0) {
+  alert("VIP ticket limit must be greater than 0.");
+  return;
+}
+
+if (totalLimit <= 0) {
+  alert("Total ticket limit must be greater than 0.");
+  return;
+}
+
+// 6️⃣ Validate the displayed total ticket limit field
+if (Number(event.ticket_limit) <= 0) {
+  alert("Total ticket limit must be greater than 0.");
+  return;
+}
+
+// 5️⃣ Validate event description filled
+if (!event.event_description.trim()) {
+  alert("Description is required!");
+  return;
+}
+
     // ⏰ Manila Time (same logic as CreateEvent)
     const nowInManila = new Date(
       new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })
